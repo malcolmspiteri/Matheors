@@ -36,20 +36,12 @@ void keyPressed() {
 class Vector {
   float angle; // The direction of the angle
   float force; // The magnitude of the force being applied, in Newtons
-  float opposingForce; // The sum of the force opposing the force of this vector
   float velocity; // The velocity, i.e., displacement over time
   float acceleration; // The current acceleration of the vector
-  List<Vector> updateOppForceList;
   
   Vector(float a, float f) {
-    this(a, f, 0);
-    updateOppForceList = new ArrayList();
-  }
-  
-  Vector(float a, float f, float of) {
     angle = a;
     force = f;
-    opposingForce = of;
   }
       
   void decrementForce() {
@@ -60,8 +52,11 @@ class Vector {
     force++;
   }
   
-  float calculateDisplacement(float massKg) {
-    acceleration = ((force - opposingForce) / massKg);
+  float calculateDisplacement(float massKg, float[] netForce) {    
+    int quadrant = (int) angle / 90; // 0: 0-89, 1: 90-179, 2: 180-269, 3: 270-359
+    float nfr = (netForce[quadrant % 4] + netForce[(quadrant+1) % 4])
+      - (netForce[(quadrant+2) % 4] + netForce[(quadrant+3) % 4]);
+    acceleration = nfr / massKg;
     float displacement = (velocity * 0.1) + (0.5 * acceleration * pow(0.1,2));
     velocity += acceleration;
     return displacement;
@@ -80,17 +75,10 @@ class Vector {
     force = f;
   }
 
-  void setOpposingForceTo(float f) {
-    opposingForce = f;
-    if (opposingForce < 0)
-      opposingForce = 0;
-  }
-  
   void showStats(int y) {
     text("Force: " + round(force),10,y);
-    text("Opposing force: " + opposingForce,10,y+15);
-    text("Acceleration: " + acceleration + " m/s²", 10, y+30);
-    text("Velocity: " + velocity + " m/s", 10, y+45);
+    text("Acceleration: " + acceleration + " m/s²", 10, y+15);
+    text("Velocity: " + velocity + " m/s", 10, y+30);
   }
   
 }
@@ -111,9 +99,6 @@ class Qbject {
   Vector currectVector;
 
   void addVector(Vector v) {
-    for (Vector ov : vectors) {
-        ov.setOpposingForceTo(ov.opposingForce + v.calculateOppsingForce(ov.angle));        
-    }
     vectors.add(v);
     currectVector = v;
   }
@@ -125,28 +110,10 @@ class Qbject {
   
   void decForce() {
     currectVector.decrementForce();
-    for (Vector ov : vectors) {
-      if (!ov.equals(currectVector)) {          
-        if (abs(ov.angle - currectVector.angle) > 90) {
-          float cop = ov.opposingForce;
-          cop -= (1f/90) * (abs(ov.angle - currectVector.angle) - 90);
-          ov.setOpposingForceTo(cop);
-        }
-      }
-    }      
   }    
 
   void incForce() {
     currectVector.incrementForce();
-    for (Vector ov : vectors) {
-      if (!ov.equals(currectVector)) {   
-        if (abs(ov.angle - currectVector.angle) > 90) {
-          float cop = ov.opposingForce;
-          cop += (1f/90) * (abs(ov.angle - currectVector.angle) - 90);
-          ov.setOpposingForceTo(cop);
-        }
-      }
-    }      
   }    
 
   void chgAngle() {
@@ -165,7 +132,7 @@ class Qbject {
       na = (360 - na);
     }
     float angle = round(na);
-    Vector v = new Vector(angle, currectVector.force, 0);
+    Vector v = new Vector(angle, currectVector.force);
     currectVector.setForceTo(0);
     addVector(v);
     
@@ -176,8 +143,21 @@ class Qbject {
     float newY = 0;
     List<Vector> toClean = new ArrayList();
 
-    for (Vector v : vectors) {
-      float displacement = v.calculateDisplacement(massKg) * metresPerPixel;    
+    // Calculate the net force on the object for all directions
+    float[] netForce = new float[] {0f,0f,0f,0f}; // RIGHT, UP, LEFT, DOWN
+    for (Vector v : vectors) {      
+      float norDeg = v.angle % 90;
+      int quadrant = (int) v.angle / 90; // 0: 0-89, 1: 90-179, 2: 180-269, 3: 270-359
+      float force1stDirection = (v.force / 90) * norDeg;
+      netForce[quadrant % 4] += force1stDirection;
+      netForce[(quadrant+1) % 4] += v.force - force1stDirection;
+    }      
+      println("Net Force RIGHT: " + netForce[0]);
+      println("Net Force UP: " + netForce[1]);
+      println("Net Force LEFT: " + netForce[2]);
+      println("Net Force DOWN: " + netForce[3]);
+    for (Vector v : vectors) {      
+      float displacement = v.calculateDisplacement(massKg, netForce) * metresPerPixel;    
       if (displacement <= 0 && !v.equals(currectVector)) {
         toClean.add(v);
         continue;
