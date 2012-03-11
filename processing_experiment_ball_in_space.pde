@@ -264,8 +264,8 @@ class Qbject {
     float p1 = posY + sin(radians(angle)) * 40;
     float p2 = posX - cos(radians(angle)) * 40;
     float a2 = 90 - (angle%90);
-    float p3 = sin(radians(angle)) * 20;
-    float p4 = cos(radians(angle)) * 20;
+    float p3 = sin(radians(angle)) * 15;
+    float p4 = cos(radians(angle)) * 15;
     triangle(posX, posY, p2+p3, p1+p4, p2-p3, p1-p4);
     //line(posX, posY, p2, p1);
     //line(p2, p1, p2+p3, p1+p4);
