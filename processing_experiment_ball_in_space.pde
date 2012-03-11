@@ -167,9 +167,11 @@ class Qbject {
       println("Normalised degree: " + norDeg);
       int quadrant = (int) f.angle / 90; // 0: 0-89, 1: 90-179, 2: 180-269, 3: 270-359
       println("Quadrant: " + quadrant);
-      float force1stDirection = (f.newtons / 90) * norDeg;
-        netForce[quadrant % 4] += f.newtons - force1stDirection;
-        netForce[(quadrant+1) % 4] += force1stDirection;
+      // Use Pythagorean Theorem to calculate the runner and riser forces
+      float riserForce = sin(radians(norDeg)) * f.newtons;
+      float runnerForce = cos(radians(norDeg)) * f.newtons;
+      netForce[quadrant % 4] += runnerForce;
+      netForce[(quadrant+1) % 4] += riserForce;
     }      
     if (DEBUG) {
       println("Net Force RIGHT: " + netForce[0]);
