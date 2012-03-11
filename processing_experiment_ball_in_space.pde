@@ -2,27 +2,60 @@ import java.util.Collections;
 
 final float METRES_PER_PIXEL = 10;
 final boolean DEBUG = true;
+final int WIDTH = 800;
+final int HEIGHT = 600;
+final int HALF_WIDTH = WIDTH / 2;
+final int HALF_HEIGHT = HEIGHT / 2;
 
 Qbject o1;
 PFont f;
 
 void setup() {
-  size(1000,800);
+  size(WIDTH,HEIGHT);
   f = loadFont("CourierNewPSMT-22.vlw");
   textFont(f,12);
   fill(0);
-  o1 = new Qbject(100, 100, 100);
+  o1 = new Qbject(100, HALF_WIDTH, HALF_HEIGHT);
 }
 
 void draw() {
   background(255);
+  if (DEBUG) {
+    line(HALF_WIDTH, 0, HALF_WIDTH, height);
+    triangle(HALF_WIDTH, 0, HALF_WIDTH-10, 20, HALF_WIDTH+10, 20);
+    triangle(HALF_WIDTH, height, HALF_WIDTH-10, height-20, HALF_WIDTH+10, height-20);
+    line(0, HALF_HEIGHT, width, HALF_HEIGHT);
+    triangle(0, HALF_HEIGHT, 20, HALF_HEIGHT-10, 20, HALF_HEIGHT+10);
+    triangle(width, HALF_HEIGHT, width-20, HALF_HEIGHT-10, width-20, HALF_HEIGHT+10);
+  }
   o1.move();
   o1.paint();
   delay(10);  
 }
 
 void mousePressed() {
-  o1.chgAngle();
+  changeDirection();
+}
+
+void changeDirection() {
+  float pmX = mouseX;
+  float pmY = mouseY;
+  float distX = abs(pmX - HALF_WIDTH);
+  float distY = abs(pmY - HALF_HEIGHT);
+  float newAngle = degrees(atan(distY / distX));
+  if (pmX < HALF_WIDTH && pmY < HALF_HEIGHT) {
+    newAngle = (180 - newAngle);
+  }
+  if (pmX < HALF_WIDTH && pmY > HALF_HEIGHT) {
+    newAngle += 180;
+  }
+  if (pmX > HALF_WIDTH && pmY > HALF_HEIGHT) {
+    newAngle = (360 - newAngle);
+  }
+  if (DEBUG) {
+    println("New force at angle " + newAngle);
+  }    
+  o1.addForce(new Force(newAngle, 0));
 }
 
 void keyPressed() {
@@ -31,6 +64,12 @@ void keyPressed() {
   }
   if (keyCode == DOWN) {
     o1.decForceOn = true;
+  }
+  if (keyCode == RIGHT) {
+    o1.rotateRight = true;
+  }
+  if (keyCode == LEFT) {
+    o1.rotateLeft = true;
   }
 }
 
@@ -43,15 +82,24 @@ void keyReleased() {
     o1.decForceOn = false;
     o1.zeroForce();
   }
+  if (keyCode == RIGHT) {
+    o1.rotateRight = false;
+  }
+  if (keyCode == LEFT) {
+    o1.rotateLeft = false;
+  }
 }
 
-class Vector {
-  float angle; // The direction of the angle
+abstract class Vector {
+  float angle;
+}
+
+class MotionVector extends Vector {
   private float force = 0;
   private float velocity; // The velocity, i.e., displacement over time
   private float acceleration; // The current acceleration of the vector
 
-  Vector(float a) {
+  MotionVector(float a) {
     angle = a;
   }
       
@@ -66,16 +114,15 @@ class Vector {
       return displacement;
   }
   
-  void showStats(int y) {
-    text("Force: " + round(force),10,y);
-    text("Acceleration: " + acceleration + " m/s²", 10, y+15);
-    text("Velocity: " + velocity + " m/s", 10, y+30);
+  void showStats(int x, int y) {
+    text("Force: " + round(force),x,y);
+    text("Acceleration: " + acceleration + " m/s²", x, y+15);
+    text("Velocity: " + velocity + " m/s", x, y+30);
   }
   
 }
 
-class Force {
-  float angle;
+class Force extends Vector {
   float newtons;
   
   Force(float a, float n) {
@@ -92,6 +139,8 @@ class Qbject {
   float massKg;
   boolean incForceOn = false;
   boolean decForceOn = false;
+  boolean rotateRight = false;
+  boolean rotateLeft = false;
 
   Qbject(float massKg, int posX, int posY) {
     this.massKg = massKg;
@@ -99,10 +148,10 @@ class Qbject {
     this.posY = posY;
   }
   
-  Vector rightVector = new Vector(0);
-  Vector upVector = new Vector(90);
-  Vector leftVector = new Vector(180);
-  Vector downVector = new Vector(270);
+  MotionVector rightMotionVector = new MotionVector(0);
+  MotionVector upMotionVector = new MotionVector(90);
+  MotionVector leftMotionVector = new MotionVector(180);
+  MotionVector downMotionVector = new MotionVector(270);
   
   List<Force> forces = new ArrayList();
   Force currentForce;
@@ -128,31 +177,23 @@ class Qbject {
     forces.get(0).newtons++;
   }    
 
-  void chgAngle() {
-    float pmX = mouseX;
-    float pmY = mouseY;
-    float distX = abs(pmX - posX);
-    float distY = abs(pmY - posY);
-    float newAngle = degrees(atan(distY / distX));
-    if (pmX < posX && pmY < posY) {
-      newAngle = (180 - newAngle);
-    }
-    if (pmX < posX && pmY > posY) {
-      newAngle += 180;
-    }
-    if (pmX > posX && pmY > posY) {
-      newAngle = (360 - newAngle);
-    }
-    if (DEBUG) {
-      println("New force at angle " + newAngle);
-    }    
-    addForce(new Force(newAngle, currentForce == null ? 1 : currentForce.newtons));
-  }
-  
   void move() {
     float newX = 0;
     float newY = 0;
     
+    if (rotateRight) {
+      float na = forces.get(0).angle - 5;
+      if (na < 0) 
+        na = 360;
+      addForce(new Force(na, 0));
+    }
+    if (rotateLeft) {
+      float na = forces.get(0).angle + 5;
+      if (na > 360) 
+        na = 0;
+      addForce(new Force(na, 0));
+    }    
+      
     if (incForceOn) {
       incForce();
     }
@@ -183,21 +224,21 @@ class Qbject {
     // Calculate the displacement to move for each vector
     
     float displacement = 0;
-    displacement = rightVector.calculateDisplacement(massKg, netForce[0]-netForce[2]) * METRES_PER_PIXEL;    
-    newX += (cos(radians(rightVector.angle)) * displacement);
-    newY += (sin(radians(rightVector.angle)) * displacement * -1);        
+    displacement = rightMotionVector.calculateDisplacement(massKg, netForce[0]-netForce[2]) * METRES_PER_PIXEL;    
+    newX += (cos(radians(rightMotionVector.angle)) * displacement);
+    newY += (sin(radians(rightMotionVector.angle)) * displacement * -1);        
 
-    displacement = upVector.calculateDisplacement(massKg, netForce[1]-netForce[3]) * METRES_PER_PIXEL;    
-    newX += (cos(radians(upVector.angle)) * displacement);
-    newY += (sin(radians(upVector.angle)) * displacement * -1);        
+    displacement = upMotionVector.calculateDisplacement(massKg, netForce[1]-netForce[3]) * METRES_PER_PIXEL;    
+    newX += (cos(radians(upMotionVector.angle)) * displacement);
+    newY += (sin(radians(upMotionVector.angle)) * displacement * -1);        
 
-    displacement = leftVector.calculateDisplacement(massKg, netForce[2]-netForce[0]) * METRES_PER_PIXEL;    
-    newX += (cos(radians(leftVector.angle)) * displacement);
-    newY += (sin(radians(leftVector.angle)) * displacement * -1);        
+    displacement = leftMotionVector.calculateDisplacement(massKg, netForce[2]-netForce[0]) * METRES_PER_PIXEL;    
+    newX += (cos(radians(leftMotionVector.angle)) * displacement);
+    newY += (sin(radians(leftMotionVector.angle)) * displacement * -1);        
 
-    displacement = downVector.calculateDisplacement(massKg, netForce[3]-netForce[1]) * METRES_PER_PIXEL;    
-    newX += (cos(radians(downVector.angle)) * displacement);
-    newY += (sin(radians(downVector.angle)) * displacement * -1);        
+    displacement = downMotionVector.calculateDisplacement(massKg, netForce[3]-netForce[1]) * METRES_PER_PIXEL;    
+    newX += (cos(radians(downMotionVector.angle)) * displacement);
+    newY += (sin(radians(downMotionVector.angle)) * displacement * -1);        
     
     // Set the new coordinates of the object,
     // rounding to the nearest pixel
@@ -217,16 +258,26 @@ class Qbject {
   }
   
   void paint() {
-    ellipse(posX, posY, 50, 50);
+    //ellipse(posX, posY, 50, 50);
+    float angle = forces.size() > 0 ? forces.get(0).angle : 0;
+    float p1 = posY + sin(radians(angle)) * 40;
+    float p2 = posX - cos(radians(angle)) * 40;
+    float a2 = 90 - (angle%90);
+    float p3 = sin(radians(angle)) * 20;
+    float p4 = cos(radians(angle)) * 20;
+    triangle(posX, posY, p2+p3, p1+p4, p2-p3, p1-p4);
+    //line(posX, posY, p2, p1);
+    //line(p2, p1, p2+p3, p1+p4);
+    //line(p2, p1, p2-p3, p1-p4);
     if (DEBUG) {
       int y = 15;
-      rightVector.showStats(y);
+      rightMotionVector.showStats(width-170, HALF_HEIGHT+15);
       y += 65;
-      upVector.showStats(y);
+      upMotionVector.showStats(HALF_WIDTH+15, 15);
       y += 65;
-      leftVector.showStats(y);
+      leftMotionVector.showStats(25, HALF_HEIGHT+15);
       y += 65;
-      downVector.showStats(y);
+      downMotionVector.showStats(HALF_WIDTH+20, height-40);
     }
   }
   
