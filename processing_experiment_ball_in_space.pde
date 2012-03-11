@@ -15,7 +15,7 @@ void setup() {
   f = loadFont("CourierNewPSMT-22.vlw");
   textFont(f,12);
   fill(0);
-  o1 = new Qbject(100, HALF_WIDTH, HALF_HEIGHT);
+  o1 = new Qbject(25, HALF_WIDTH, HALF_HEIGHT);
 }
 
 void draw() {
@@ -30,7 +30,7 @@ void draw() {
   }
   o1.move();
   o1.paint();
-  delay(10);  
+  delay(40);  
 }
 
 void mousePressed() {
@@ -106,7 +106,8 @@ class MotionVector extends Vector {
   float calculateDisplacement(float massKg, float newtons) {    
     force = newtons;
     acceleration = newtons / massKg;
-    float displacement = (velocity * 0.1) + (0.5 * acceleration * pow(0.1,2));
+    // time is 0.4 of a second for 25fps
+    float displacement = (velocity * 0.04) + (0.5 * acceleration * pow(0.04,2));
     velocity += acceleration;
     if (displacement < 0)
       return 0;
@@ -182,16 +183,16 @@ class Qbject {
     float newY = 0;
     
     if (rotateRight) {
-      float na = forces.get(0).angle - 5;
+      float na = forces.get(0).angle - 10;
       if (na < 0) 
         na = 360;
-      addForce(new Force(na, 0));
+      addForce(new Force(na, forces.get(0).newtons));
     }
     if (rotateLeft) {
-      float na = forces.get(0).angle + 5;
+      float na = forces.get(0).angle + 10;
       if (na > 360) 
         na = 0;
-      addForce(new Force(na, 0));
+      addForce(new Force(na, forces.get(0).newtons));
     }    
       
     if (incForceOn) {
