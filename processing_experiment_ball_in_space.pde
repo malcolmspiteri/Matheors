@@ -2,12 +2,12 @@ import java.util.Collections;
 
 final float METRES_PER_PIXEL = 10;
 final boolean DEBUG = true;
-final int WIDTH = 800;
-final int HEIGHT = 600;
-final int HALF_WIDTH = WIDTH / 2;
-final int HALF_HEIGHT = HEIGHT / 2;
-final int FPS = 25;
-final int MILLIS_DELAY_PER_DRAW = 1000 / FPS;
+final float WIDTH = 800;
+final float HEIGHT = 600;
+final float HALF_WIDTH = WIDTH / 2;
+final float HALF_HEIGHT = HEIGHT / 2;
+final float FPS = 25;
+final float MILLIS_DELAY_PER_DRAW = 1000 / FPS;
 final float SECONDS_PER_TICK = 1 / (float)FPS;
 long ticker = 0; // Will be incremented every 40 milliseconds, 25 times per second
 
@@ -23,16 +23,16 @@ void setup() {
     println("MILLIS_DELAY_PER_DRAW: " + MILLIS_DELAY_PER_DRAW);
     println("SECONDS_PER_TICK: " + SECONDS_PER_TICK);
   }
-  size(WIDTH,HEIGHT);
+  size(round(WIDTH),round(HEIGHT));
   f = loadFont("CourierNewPSMT-22.vlw");
   textFont(f,12);
   fill(0);
   o1 = new Spacecraft(10, new Coordinates(HALF_WIDTH, HALF_HEIGHT), 30, 60, new Force(30, 0));  
   qbjects.add(o1);
-  qbjects.add(new Matheor(30, new Coordinates(100, 100), 100, 50, new Force(300, 50, FPS * 3)));
-  qbjects.add(new Matheor(20, new Coordinates(500, 200), 75, 50, new Force(40, 50, FPS * 3)));
-  qbjects.add(new Matheor(20, new Coordinates(200, 500), 75, 50, new Force(40, 50, FPS * 3)));
-  qbjects.add(new Matheor(40, new Coordinates(600, 700), 125, 75, new Force(40, 80, FPS * 3)));
+  qbjects.add(new Matheor(30, new Coordinates(100f, 100f), 100, 50, new Force(300, 50, FPS * 3)));
+  qbjects.add(new Matheor(20, new Coordinates(500f, 200f), 75, 50, new Force(40, 50, FPS * 3)));
+  qbjects.add(new Matheor(20, new Coordinates(200f, 500f), 75, 50, new Force(40, 50, FPS * 3)));
+  qbjects.add(new Matheor(40, new Coordinates(600f, 700f), 125, 75, new Force(40, 80, FPS * 3)));
 }
 
 void checkForCollisions() {
@@ -78,12 +78,12 @@ void draw() {
   }
   if (DEBUG)
     o1.paintStats();
-  checkForCollisions();
   for (Qbject o : qbjects) {
     o.move();
     o.paint();
   }
-  delay(MILLIS_DELAY_PER_DRAW);  
+  checkForCollisions();
+  delay(round(MILLIS_DELAY_PER_DRAW));  
 }
 
 void keyPressed() {
@@ -151,7 +151,7 @@ class MotionVector extends Vector {
       return velocity * massKg;
   }
   
-  void showStats(int x, int y) {
+  void showStats(float x, float y) {
     fill(0);
     textAlign(LEFT);
     text("Force: " + round(force),x,y);
@@ -171,7 +171,7 @@ class Force extends Vector {
     magnitude = n;
   } 
 
-  Force(float a, float n, long l) {
+  Force(float a, float n, float l) {
     this(a, n);
     lifetime = l;    
   } 
@@ -189,7 +189,7 @@ class Coordinates {
   float x;
   float y;
   
-  Coordinates(int x, int y) {
+  Coordinates(float x, float y) {
     this.x = x;
     this.y = y;
   }
@@ -203,7 +203,7 @@ abstract class DriveableQbject extends Qbject {
   boolean rotateRight = false;
   boolean rotateLeft = false;
 
-  DriveableQbject(float massKg, Coordinates compos, int _width, int _height, Force initForce) {
+  DriveableQbject(float massKg, Coordinates compos, float _width, float _height, Force initForce) {
     super(massKg, compos, _width, _height, initForce);
   }
   
@@ -260,7 +260,7 @@ abstract class Qbject {
   float _height;
   String name;
   
-  Qbject(float massKg, Coordinates compos, int _width, int _height, Force initForce) {
+  Qbject(float massKg, Coordinates compos, float _width, float _height, Force initForce) {
     this.massKg = massKg;
     this.compos = compos;
     this._width = _width;
@@ -326,30 +326,47 @@ abstract class Qbject {
     forces.put(id, f);
   }
 
+  float calcArea(Coordinates a,Coordinates b,Coordinates c) {
+    return calcArea(a.x, a.y, b.x, b.y, c.x, c.y);
+  }
+
+  float calcArea(float a1, float a2, float b1, float b2, float c1, float c2) {
+    return calcArea(a1, a2, 1, b1, b2, 1, c1, c2, 1);
+  }
+
+  float calcArea(float a1, float a2, float a3, float b1, float b2, float b3, float c1, float c2, float c3) {
+    // Find the area of the triangle
+    // We'll use the cross product for this, which is
+    // a1((b2*c3)-(c2*b3))-a2((b1*c3)-(c1*b3))+a3((b1*c2)-(c1*b2))
+    return ((a1*((b2*c3)-(c2*b3)))-(a2*((b1*c3)-(c1*b3)))+(a3*((b1*c2)-(c1*b2)))) / 2;  
+  }
+  
   boolean hasCollidedWith(Qbject other) {
-    float distX = 0;
-    float distY = 0;
-    distX = abs(this.getCentrePointX() - other.getCentrePointX());
-    distY = abs(this.getCentrePointY() - other.getCentrePointY());
-    if (distX < ((this.getRightmostPoint() - this.getLeftmostPoint()) + (other.getRightmostPoint() - other.getLeftmostPoint())) / 2 &&
-        distY < ((this.getDownmostPoint() - this.getUpmostPoint()) + (other.getDownmostPoint() - other.getUpmostPoint())) / 2) {
-      // Separeate objects from each other
-      this.moveToPreviousPosition();
-      other.moveToPreviousPosition();
-    println("distX: " + distX);
-    println("distY: " + distY);
-    println("width this: " + (this.getRightmostPoint() - this.getLeftmostPoint()));
-    println("width that: " + (other.getRightmostPoint() - other.getLeftmostPoint()));
-      println("height this: " + (this.getDownmostPoint() - this.getUpmostPoint()));
-      println("height that: " + (other.getDownmostPoint() - other.getUpmostPoint()));
-      println("moving " + this.name + " to prev pos: " + this.pcompos.x + " - " + this.pcompos.y);
-      println("moving " + other.name + " to prev pos: " + other.pcompos.x + " - " + other.pcompos.y);
-      println(this.name + " pos: " + this.compos.x + " - " + this.compos.y);
-      println(other.name + " pos: " + other.compos.x + " - " + other.compos.y);
-      return true;
-    } else {
-      return false;    
+    Coordinates cm = this.compos;
+    Coordinates cc = null;
+    for (Coordinates ct : this.vertices) {
+      if (cc == null)
+        cc = this.vertices.get(this.vertices.size()-1);
+      // Find the area of the triangle cc, ct, cm
+      // We'll use the cross product for this, which is
+      // a1((b2*c3)-(c2*b3))-a2((b1*c3)-(c1*b3))+a3((b1*c2)-(c1*b2))
+      float art = calcArea(cc, cm, ct);
+      for (Coordinates co : other.vertices) {
+        /*println("The area is of 1 of " + other.name + " is " + (calcArea(cc, ct,co)));
+        println("The area is of 2 of " + other.name + " is " + (calcArea(ct, cm,co)));
+        println("The area is of 3 of " + other.name + " is " + (calcArea(cm, cc,co)));
+        println("The area is of sum of " + other.name + " is " + (calcArea(co, cc,ct)+calcArea(co, ct,cm)+calcArea(co, cm,cc)));*/
+        if (abs(abs(art)-(abs(calcArea(co, cc,ct))+abs(calcArea(co, ct,cm))+abs(calcArea(co, cm,cc)))) <= 0.5f) {
+          this.compos.x = this.pcompos.x;
+          this.compos.y = this.pcompos.y;
+          other.compos.x = other.pcompos.x;
+          other.compos.y = other.pcompos.y;
+          return true;
+        }
+      }
+      cc = ct;
     }
+    return false;
   }
   
   void moveToPreviousPosition() {
@@ -462,8 +479,8 @@ abstract class Qbject {
       pcompos.x = compos.x;
       pcompos.y = compos.y;
     }
-    compos.x += round(dispXY.x);
-    compos.y += round(dispXY.y);
+    compos.x += dispXY.x;
+    compos.y += dispXY.y;
     
     // Wrap to the opposite side of the screen 
     // if the object's position exceeds it 
@@ -478,7 +495,7 @@ abstract class Qbject {
   }
   
     void paintStats() {
-      int y = 15;
+      float y = 15;
       rightMotionVector.showStats(width-170, HALF_HEIGHT+15);
       y += 65;
       upMotionVector.showStats(HALF_WIDTH+15, 15);
@@ -494,7 +511,7 @@ abstract class Qbject {
 
 class Spacecraft extends DriveableQbject {
 
-  Spacecraft(float massKg, Coordinates compos, int _width, int _height, Force initForce) {
+  Spacecraft(float massKg, Coordinates compos, float _width, float _height, Force initForce) {
     super(massKg, compos, _width, _height, initForce);
     name = "spacecraft";
   }
@@ -513,24 +530,23 @@ class Spacecraft extends DriveableQbject {
     
     float angle = forces.size() > 0 ? forces.get(0).direction : 0;
     Coordinates f = new Coordinates(
-      round(compos.x + cos(radians(angle)) * (_height / 2)),
-      round(compos.y - sin(radians(angle)) * (_height / 2))
+      compos.x + cos(radians(angle)) * (_height / 2),
+      compos.y - sin(radians(angle)) * (_height / 2)
     );
     Coordinates bm = new Coordinates(
-      round(compos.x - cos(radians(angle)) * (_height / 2)),
-      round(compos.y + sin(radians(angle)) * (_height / 2))
+      compos.x - cos(radians(angle)) * (_height / 2),
+      compos.y + sin(radians(angle)) * (_height / 2)
     );
     Coordinates bl = new Coordinates(
-      round(bm.x - sin(radians(angle)) * (_width / 2)),
-      round(bm.y - cos(radians(angle)) * (_width / 2))
+      bm.x - sin(radians(angle)) * (_width / 2),
+      bm.y - cos(radians(angle)) * (_width / 2)
     );
     Coordinates br = new Coordinates(
-      round(bm.x + sin(radians(angle)) * (_width / 2)),
-      round(bm.y + cos(radians(angle)) * (_width / 2))
+      bm.x + sin(radians(angle)) * (_width / 2),
+      bm.y + cos(radians(angle)) * (_width / 2)
     );
     vertices.clear();
     vertices.add(f);
-    vertices.add(bm);
     vertices.add(bl);
     vertices.add(br);    
     
@@ -554,7 +570,7 @@ class Spacecraft extends DriveableQbject {
 
 class Matheor extends Qbject {
   
-  Matheor(float massKg, Coordinates compos, int _width, int _height, Force initForce) {
+  Matheor(float massKg, Coordinates compos, float _width, float _height, Force initForce) {
     super(massKg, compos, _width, _height, initForce);
     name = "matheor";
   }
@@ -567,15 +583,25 @@ class Matheor extends Qbject {
     ellipse(compos.x, compos.y, _width, _height);
 
     vertices.clear();
-    vertices.add(new Coordinates(round(compos.x - (_width / 2)), 
-      round(compos.y - (_height / 2))));
-    vertices.add(new Coordinates(round(compos.x + (_width / 2)), 
-      round(compos.y + (_height / 2))));
-
+    vertices.add(new Coordinates(compos.x, 
+      compos.y - (_height * 0.5)));
+    vertices.add(new Coordinates((compos.x + (_width * 0.25)), 
+      compos.y - (_height * 0.4)));
+    vertices.add(new Coordinates(compos.x + (_width * 0.5), 
+      compos.y));
+    vertices.add(new Coordinates(compos.x + (_width * 0.25), 
+      compos.y + (_height * 0.4)));
+    vertices.add(new Coordinates(compos.x, compos.y + (_height * 0.5)));
+    vertices.add(new Coordinates(compos.x - (_width * 0.25), 
+      compos.y + (_height * 0.4)));
+    vertices.add(new Coordinates(compos.x - (_width * 0.5), 
+      compos.y));
+    vertices.add(new Coordinates(compos.x - (_width * 0.25), 
+      compos.y - (_height * 0.4)));
 
     smooth();
     stroke(100);
-    beginShape(LINES);
+    beginShape();
     for (Coordinates v : vertices) {
       vertex(v.x, v.y);
     }
