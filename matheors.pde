@@ -12,8 +12,9 @@ final float SECONDS_PER_TICK = 1 / (float)FPS;
 long ticker = 0; // Will be incremented every 40 milliseconds, 25 times per second
 
 
-DriveableQbject o1;
+Spacecraft o1;
 List<Qbject> qbjects = new ArrayList();
+List<LifetimeQbject> ltqbjects = new ArrayList();
 
 PFont f;
 
@@ -26,7 +27,7 @@ void setup() {
   size(round(WIDTH),round(HEIGHT));
   f = loadFont("CourierNewPSMT-22.vlw");
   textFont(f,12);
-  fill(0);
+  fill(255);
   o1 = new Spacecraft(10, new Coordinates(HALF_WIDTH, HALF_HEIGHT), 30, 60, new Force(30, 0));  
   qbjects.add(o1);
   qbjects.add(new Matheor(30, new Coordinates(100f, 100f), 100, 50, new Force(300, 50, FPS * 3)));
@@ -62,12 +63,25 @@ void checkForCollisions() {
       }
     }    
   }
-  if (nc > 0)
-  println("No collisions: " + nc);
+  //if (nc > 0)
+  //println("No collisions: " + nc);
+}
+
+List<LifetimeQbject> killLiftimeQbjects() {
+  List<LifetimeQbject> nltqbjects = new ArrayList();
+  for (LifetimeQbject o : ltqbjects) {
+    if (o.isExhausted()) {
+      //ltqbjects.remove(o);
+      qbjects.remove(o);
+    } else {
+      nltqbjects.add(o);
+    }
+  }
+  return nltqbjects;
 }
 
 void draw() {
-  background(255);
+  background(20);
   if (DEBUG) {
     line(HALF_WIDTH, 0, HALF_WIDTH, height);
     triangle(HALF_WIDTH, 0, HALF_WIDTH-10, 20, HALF_WIDTH+10, 20);
@@ -82,6 +96,7 @@ void draw() {
     o.move();
     o.paint();
   }
+  ltqbjects = killLiftimeQbjects();
   checkForCollisions();
   delay(round(MILLIS_DELAY_PER_DRAW));  
 }
@@ -101,8 +116,12 @@ void keyPressed() {
   }
   if (key == 'c') {
     //o1.collideWith(o2);
-    checkForCollisions();
+    //checkForCollisions();
+    Shot s = (Shot) o1.fire();
+    qbjects.add(s);
+    ltqbjects.add(s);
   }
+  
 }
 
 void keyReleased() {
@@ -166,6 +185,13 @@ class Force extends Vector {
   long ticks = 0;
   boolean exhausted = false;
   
+  boolean isExhausted() {
+    if (lifetime != 0 && (ticks++ >= lifetime)) {
+      exhausted = true;
+    }
+    return exhausted;
+  }
+
   Force(float a, float n) {
     direction = a;
     magnitude = n;
@@ -175,13 +201,6 @@ class Force extends Vector {
     this(a, n);
     lifetime = l;    
   } 
-  
-  boolean isExhausted() {
-    if (lifetime != 0 && (ticks++ >= lifetime)) {
-      exhausted = true;
-    }
-    return exhausted;
-  }
 
 }
 
@@ -196,64 +215,9 @@ class Coordinates {
   
 }
 
-abstract class DriveableQbject extends Qbject {
-
-  boolean incForceOn = false;
-  boolean decForceOn = false;
-  boolean rotateRight = false;
-  boolean rotateLeft = false;
-
-  DriveableQbject(float massKg, Coordinates compos, float _width, float _height, Force initForce) {
-    super(massKg, compos, _width, _height, initForce);
-  }
-  
-  void decForce() {
-    if (forces.size() > 0)
-    forces.get(0).magnitude-=5;
-  }    
-
-  void incForce() {
-    if (forces.size() > 0)
-    forces.get(0).magnitude += 5;
-  }    
-
-  void zeroForce() {
-    if (forces.size() > 0)
-    forces.get(0).magnitude = 0;
-  }    
-
-  void move() {
-   
-    if (rotateRight) {
-      float na = forces.get(0).direction - 10;
-      if (na < 0) 
-        na = 360;
-      addForce(0, new Force(na, forces.get(0).magnitude));
-    }
-    if (rotateLeft) {
-      float na = forces.get(0).direction + 10;
-      if (na > 360) 
-        na = 0;
-      addForce(0, new Force(na, forces.get(0).magnitude));
-    }    
-      
-    if (incForceOn) {
-      incForce();
-    }
-    
-    if (decForceOn) {
-      decForce();
-    }
-    
-    super.move();
-
-  }
-
-}
-
 abstract class Qbject {
 
-  Coordinates pcompos = new Coordinates(0, 0);
+  Stack<Coordinates> pcs = new Stack();
   Coordinates compos;
   float massKg;
   float _width;
@@ -274,6 +238,8 @@ abstract class Qbject {
   MotionVector downMotionVector = new MotionVector(270);
   
   List<Coordinates> vertices = new ArrayList();
+  
+  abstract boolean explodeOnCollision();
   
   float getLeftmostPoint() {
     float res = WIDTH + 1000;
@@ -342,9 +308,14 @@ abstract class Qbject {
   }
   
   boolean hasCollidedWith(Qbject other) {
+    if (this.name.equals("shot") && (other.name.equals("shot")))
+      return false;
+    if (compos.x < 0 || compos.x > WIDTH || compos.y < 0 || compos.y > HEIGHT ||
+        other.compos.x < 0 || other.compos.x > WIDTH || other.compos.y < 0 || other.compos.y > HEIGHT)
+      return false;
     Coordinates cm = this.compos;
     Coordinates cc = null;
-    for (Coordinates ct : this.vertices) {
+    for (Coordinates ct : this.vertices) {      
       if (cc == null)
         cc = this.vertices.get(this.vertices.size()-1);
       // Find the area of the triangle cc, ct, cm
@@ -352,15 +323,23 @@ abstract class Qbject {
       // a1((b2*c3)-(c2*b3))-a2((b1*c3)-(c1*b3))+a3((b1*c2)-(c1*b2))
       float art = calcArea(cc, cm, ct);
       for (Coordinates co : other.vertices) {
+        if (abs(this.compos.x - co.x) < abs(this.compos.x - cm.x) || abs(this.compos.x - cc.x) < abs(this.compos.x - cc.x))
+          continue;
+        if (abs(this.compos.y - co.y) < abs(this.compos.y - cm.y) || abs(this.compos.y - cc.y) < abs(this.compos.y - cc.y))
+          continue;
         /*println("The area is of 1 of " + other.name + " is " + (calcArea(cc, ct,co)));
         println("The area is of 2 of " + other.name + " is " + (calcArea(ct, cm,co)));
         println("The area is of 3 of " + other.name + " is " + (calcArea(cm, cc,co)));
         println("The area is of sum of " + other.name + " is " + (calcArea(co, cc,ct)+calcArea(co, ct,cm)+calcArea(co, cm,cc)));*/
-        if (abs(abs(art)-(abs(calcArea(co, cc,ct))+abs(calcArea(co, ct,cm))+abs(calcArea(co, cm,cc)))) <= 0.5f) {
+        if (abs(abs(art)-(abs(calcArea(co, cc,ct))+abs(calcArea(co, ct,cm))+abs(calcArea(co, cm,cc)))) <= 0.1f) {
+          //this.moveToPreviousPosition();
+          //other.moveToPreviousPosition();
+          /*
           this.compos.x = this.pcompos.x;
           this.compos.y = this.pcompos.y;
           other.compos.x = other.pcompos.x;
           other.compos.y = other.pcompos.y;
+          */
           return true;
         }
       }
@@ -369,9 +348,16 @@ abstract class Qbject {
     return false;
   }
   
+  Coordinates getPreviousPosition() {
+    return pcs.pop();
+  }
+  
   void moveToPreviousPosition() {
-    compos.x = pcompos.x;
-    compos.y = pcompos.y;
+    if (!pcs.empty()) {
+      Coordinates pcompos = getPreviousPosition();
+      compos.x = pcompos.x;
+      compos.y = pcompos.y;
+    }
   }
 
   void collideWith(Qbject other) {
@@ -391,39 +377,51 @@ abstract class Qbject {
     // Next we reflect (reverse) each velocity in this center of mass frame, and translate back to the stationary coordinate system. 
     float vft = (vcmt * -1) + sysv;
     float vfo = (vcmo * -1) + sysv;
+    this.upMotionVector.velocity = vft;
+    this.downMotionVector.velocity = vft * -1;
+    other.upMotionVector.velocity = vfo;
+    other.downMotionVector.velocity = vfo * -1;
+    
     //println("Final velcoity 1: " + vft);
     //println("Final velcoity 2: " + vfo);
     // Now we know the change in velocity for each object so we can calculate the impluse
-    float impt = ((vft - this.upMotionVector.velocity) * this.massKg) / SECONDS_PER_TICK;
+    //float impt = ((vft - this.upMotionVector.velocity) * this.massKg) / SECONDS_PER_TICK;
     //println("Impulse 1: " + impt);
-    this.addForce(new Force(90, impt, 1));    
-    float impo = ((vfo - other.upMotionVector.velocity) * other.massKg) / SECONDS_PER_TICK;
+    //this.addForce(new Force(90, impt, 1));    
+    //float impo = ((vfo - other.upMotionVector.velocity) * other.massKg) / SECONDS_PER_TICK;
     //println("Impulse 2: " + impo);
-    other.addForce(new Force(90, impo, 1));
+    //other.addForce(new Force(90, impo, 1));
 
   }
   
   void doCollide0(Qbject other) {
     // Find the velocity of the 2-Qbject system. 
     float sysv = (this.rightMotionVector.calculateMomentum(massKg) + other.rightMotionVector.calculateMomentum(other.massKg)) / (this.massKg + other.massKg);
-    println("Initial velcoity 1: " + this.rightMotionVector.velocity);
-    println("Initial velcoity 2: " + other.rightMotionVector.velocity);
-    println("System Velcoity: " + sysv);
+    //println("Initial velcoity 1: " + this.rightMotionVector.velocity);
+    //println("Initial velcoity 2: " + other.rightMotionVector.velocity);
+    //println("System Velcoity: " + sysv);
     // Next we find the velocity of each Qbject in the coordinate system (frame) that is moving along with the center of mass.
     float vcmt = this.rightMotionVector.velocity - sysv;
     float vcmo = other.rightMotionVector.velocity - sysv;
     // Next we reflect (reverse) each velocity in this center of mass frame, and translate back to the stationary coordinate system. 
     float vft = (vcmt * -1) + sysv;
     float vfo = (vcmo * -1) + sysv;
-    println("Final velcoity 1: " + vft);
-    println("Final velcoity 2: " + vfo);
+    this.rightMotionVector.velocity = vft;
+    this.leftMotionVector.velocity = vft * -1;
+    other.rightMotionVector.velocity = vfo;
+    other.leftMotionVector.velocity = vfo * -1;
+
+
+
+    //println("Final velcoity 1: " + vft);
+    //println("Final velcoity 2: " + vfo);
     // Now we know the change in velocity for each object so we can calculate the impluse
-    float impt = ((vft - this.rightMotionVector.velocity) * this.massKg) / SECONDS_PER_TICK;
-    println("Impulse 1: " + impt);
-    this.addForce(new Force(0, impt, 1));    
-    float impo = ((vfo - other.rightMotionVector.velocity) * other.massKg) / SECONDS_PER_TICK;
-    println("Impulse 2: " + impo);
-    other.addForce(new Force(0, impo, 1));
+    //float impt = ((vft - this.rightMotionVector.velocity) * this.massKg) / SECONDS_PER_TICK;
+    //println("Impulse 1: " + impt);
+    //this.addForce(new Force(0, impt, 1));    
+    //float impo = ((vfo - other.rightMotionVector.velocity) * other.massKg) / SECONDS_PER_TICK;
+    //println("Impulse 2: " + impo);
+    //other.addForce(new Force(0, impo, 1));
     
   }
 
@@ -475,10 +473,15 @@ abstract class Qbject {
     
     // Set the new compos of the object,
     // rounding to the nearest pixel
-    if (pcompos.x != compos.x || pcompos.y != compos.y) {
-      pcompos.x = compos.x;
-      pcompos.y = compos.y;
+    if (!pcs.empty()) {
+      Coordinates pcompos = pcs.peek();
+      if (pcompos.x != compos.x || pcompos.y != compos.y) {
+        pcs.push(new Coordinates(compos.x, compos.y));
+      }
+    } else {
+      pcs.push(new Coordinates(compos.x, compos.y));
     }
+    
     compos.x += dispXY.x;
     compos.y += dispXY.y;
     
@@ -509,13 +512,156 @@ abstract class Qbject {
   
 }
 
+abstract class DriveableQbject extends Qbject {
+
+  boolean incForceOn = false;
+  boolean decForceOn = false;
+  boolean rotateRight = false;
+  boolean rotateLeft = false;
+
+  DriveableQbject(float massKg, Coordinates compos, float _width, float _height, Force initForce) {
+    super(massKg, compos, _width, _height, initForce);
+  }
+  
+  void decForce() {
+    if (forces.size() > 0)
+    forces.get(0).magnitude-=5;
+  }    
+
+  void incForce() {
+    if (forces.size() > 0)
+    forces.get(0).magnitude += 5;
+  }    
+
+  void zeroForce() {
+    if (forces.size() > 0)
+    forces.get(0).magnitude = 0;
+  }    
+
+  void move() {
+   
+    if (rotateRight) {
+      float na = forces.get(0).direction - 10;
+      if (na < 0) 
+        na = 350;
+      addForce(0, new Force(na, forces.get(0).magnitude));
+    }
+    if (rotateLeft) {
+      float na = forces.get(0).direction + 10;
+      if (na > 350) 
+        na = 0;
+      addForce(0, new Force(na, forces.get(0).magnitude));
+    }    
+      
+    if (incForceOn) {
+      incForce();
+    }
+    
+    if (decForceOn) {
+      decForce();
+    }
+    
+    super.move();
+
+  }
+
+}
+
+abstract class LifetimeQbject extends Qbject {
+
+  float lifetime = FPS * 5;
+  long ticks = 0;
+  boolean exhausted = false;
+  
+  boolean isExhausted() {
+    if (lifetime != 0 && (ticks++ >= lifetime)) {
+      exhausted = true;
+    }
+    return exhausted;
+  }
+  
+  LifetimeQbject(float massKg, Coordinates compos, float _width, float _height, Force initForce) {
+    super(massKg, compos, _width, _height, initForce);
+  }
+ 
+
+}
+
+class Shot extends LifetimeQbject {
+
+  Shot(float massKg, Coordinates compos, float _width, float _height, Force initForce) {
+    super(massKg, compos, _width, _height, initForce);
+    name = "shot";
+  }
+  
+  boolean explodeOnCollision() {
+    return true;
+  }
+  
+  void paint() {
+    fill(255);
+    
+    ellipseMode(CENTER);
+    ellipse(compos.x, compos.y, _width, _height);
+
+    vertices.clear();
+    vertices.add(new Coordinates(
+      compos.x,
+      compos.y
+    ));
+/*
+    vertices.add(new Coordinates(
+      compos.x,
+      compos.y - (_height / 2)
+    ));
+    vertices.add(new Coordinates(
+      compos.x + (width / 2),
+      compos.y
+    ));
+    vertices.add(new Coordinates(
+      compos.x,
+      compos.y + (_height / 2)
+    ));
+    vertices.add(new Coordinates(
+      compos.x - (width / 2),
+      compos.y
+    ));
+*/
+  }
+
+}
+
 class Spacecraft extends DriveableQbject {
 
   Spacecraft(float massKg, Coordinates compos, float _width, float _height, Force initForce) {
     super(massKg, compos, _width, _height, initForce);
     name = "spacecraft";
+    loadImages();
   }
 
+  boolean explodeOnCollision() {
+    return false;
+  }
+
+  private Map<Integer, PImage> imgs = new HashMap();
+  
+  void loadImages() {
+    for (int i = 0; i <= 350; i += 10) {
+      PImage img = loadImage("images\\spacecraft\\0thrust\\" + i + ".png");
+      imgs.put(i, img);
+    }
+  }
+  
+  Qbject fire() {
+    float angle = forces.size() > 0 ? forces.get(0).direction : 0;
+    Coordinates f = new Coordinates(
+      compos.x + cos(radians(angle)) * (_height + 2 / 2),
+      compos.y - sin(radians(angle)) * (_height + 2 / 2)
+    );    
+    return new Shot(1, f, 10, 10, new Force(angle, 80, FPS));
+
+  }
+  
   void paint() {
     fill(0);
     /*
@@ -527,7 +673,7 @@ class Spacecraft extends DriveableQbject {
     shapeMode(CENTER);
     shape(sc, compos.x, compos.y, sc.width * 0.2, sc.height * 0.2);
     */
-    
+
     float angle = forces.size() > 0 ? forces.get(0).direction : 0;
     Coordinates f = new Coordinates(
       compos.x + cos(radians(angle)) * (_height / 2),
@@ -550,6 +696,7 @@ class Spacecraft extends DriveableQbject {
     vertices.add(bl);
     vertices.add(br);    
     
+/*
     smooth();
     beginShape(TRIANGLES);
     vertex(f.x, f.y);
@@ -564,6 +711,10 @@ class Spacecraft extends DriveableQbject {
       vertex(v.x, v.y);
     }
     endShape();
+*/
+    imageMode(CENTER);
+    image(imgs.get(floor(angle)), compos.x, compos.y);
+    
   }
 
 }
@@ -575,12 +726,40 @@ class Matheor extends Qbject {
     name = "matheor";
   }
 
-  void paint() {
-    fill(0);
+  boolean explodeOnCollision() {
+    return false;
+  }
 
+  void paint() {
+    
+    pushMatrix();
+    // move the origin to the pivot point
+    translate(compos.x, compos.y); 
+    
+    // then pivot the grid
+    rotate(radians(45));
+    
+    // and draw the square at the origin
+    fill(255);
     ellipseMode(CENTER);
     smooth();
-    ellipse(compos.x, compos.y, _width, _height);
+    ellipse(0, 0, _width, _height);
+
+/*    smooth();
+    stroke(100);
+    beginShape();
+    for (Coordinates v : vertices) {
+      vertex(v.x, v.y);
+    }
+    endShape();*/
+    
+    textFont(f);
+    fill(150);
+    text("10", 0, 6);
+    textAlign(CENTER);
+
+    popMatrix();
+
 
     vertices.clear();
     vertices.add(new Coordinates(compos.x, 
@@ -599,18 +778,6 @@ class Matheor extends Qbject {
     vertices.add(new Coordinates(compos.x - (_width * 0.25), 
       compos.y - (_height * 0.4)));
 
-    smooth();
-    stroke(100);
-    beginShape();
-    for (Coordinates v : vertices) {
-      vertex(v.x, v.y);
-    }
-    endShape();
-    
-    textFont(f);
-    fill(100);
-    text("10", compos.x, compos.y + 6);
-    textAlign(CENTER);
   }
 
 }
