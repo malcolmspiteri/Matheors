@@ -1,8 +1,6 @@
 package nit.matheors.model.objects;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import nit.matheors.Coordinates;
 import nit.matheors.GameComponent;
@@ -11,7 +9,6 @@ import nit.matheors.MatheorsSettings;
 import nit.matheors.model.TransientVector;
 import nit.matheors.model.Vector;
 import processing.core.PApplet;
-import static processing.core.PApplet.abs;
 import static processing.core.PApplet.sin;
 import static processing.core.PApplet.cos;
 import static processing.core.PApplet.radians;
@@ -57,9 +54,11 @@ public abstract class Qbject extends GameComponent implements MatheorsSettings {
 	protected float velocity180 = 0f;
 	protected float velocity270 = 0f;
 
-	protected List<Coordinates> vertices = new ArrayList<Coordinates>();
-
 	public abstract boolean explodeOnCollision();
+	
+	public abstract boolean tidyUp();
+	
+	public abstract CollisionDetectionType collisionDetectionType();
 
 	protected float calculateAcceleration(float newtons) {
 		return newtons / massKg;
@@ -111,58 +110,15 @@ public abstract class Qbject extends GameComponent implements MatheorsSettings {
 	}
 
 	public boolean hasCollidedWith(Qbject other) {
-		if (this.name.equals("shot") && (other.name.equals("shot")))
-			return false;
-		if (compos.getX() < 0 || compos.getX() > SCREEN_WIDTH || compos.getY() < 0
-				|| compos.getY() > SCREEN_HEIGHT || other.compos.getX() < 0
-				|| other.compos.getX() > SCREEN_WIDTH || other.compos.getY() < 0
-				|| other.compos.getY() > SCREEN_HEIGHT)
-			return false;
-		Coordinates cm = this.compos;
-		Coordinates cc = null;
-		for (Coordinates ct : this.vertices) {
-			if (cc == null)
-				cc = this.vertices.get(this.vertices.size() - 1);
-			// Find the area of the triangle cc, ct, cm
-			// We'll use the cross product for this, which is
-			// a1((b2*c3)-(c2*b3))-a2((b1*c3)-(c1*b3))+a3((b1*c2)-(c1*b2))
-			float art = calcArea(cc, cm, ct);
-			for (Coordinates co : other.vertices) {
-				if (abs(this.compos.getX() - co.getX()) < abs(this.compos.getX() - cm.getX())
-						|| abs(this.compos.getX() - cc.getY()) < abs(this.compos.getX()
-								- cc.getX()))
-					continue;
-				if (abs(this.compos.getY() - co.getY()) < abs(this.compos.getY() - cm.getY())
-						|| abs(this.compos.getY() - cc.getY()) < abs(this.compos.getY()
-								- cc.getY()))
-					continue;
-				/*
-				 * println("The area is of 1 of " + other.name + " is " +
-				 * (calcArea(cc, ct,co))); println("The area is of 2 of " +
-				 * other.name + " is " + (calcArea(ct, cm,co)));
-				 * println("The area is of 3 of " + other.name + " is " +
-				 * (calcArea(cm, cc,co))); println("The area is of sum of "
-				 * + other.name + " is " + (calcArea(co, cc,ct)+calcArea(co,
-				 * ct,cm)+calcArea(co, cm,cc)));
-				 */
-				if (abs(abs(art)
-						- (abs(calcArea(co, cc, ct))
-								+ abs(calcArea(co, ct, cm)) + abs(calcArea(
-									co, cm, cc)))) <= 0.1f) {
-					// this.moveToPreviousPosition();
-					// other.moveToPreviousPosition();
-					/*
-					 * this.compos.getX() = this.pcompos.getX(); this.compos.getY() =
-					 * this.pcompos.getY(); other.compos.getX() = other.pcompos.getX();
-					 * other.compos.getY() = other.pcompos.getY();
-					 */
-					return true;
-				}
-			}
-			cc = ct;
-		}
-		return false;
+		if (other instanceof ComplexQbject)
+			return hasCollidedWith((ComplexQbject) other);
+		else
+			return hasCollidedWith((SimpleQbject) other);
 	}
+	
+	public abstract boolean hasCollidedWith(ComplexQbject other);
+	
+	public abstract boolean hasCollidedWith(SimpleQbject other);
 
 	public void collideWith(Qbject other) {
 		doCollide0(other);

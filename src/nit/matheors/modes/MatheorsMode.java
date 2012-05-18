@@ -5,5 +5,7 @@ public interface MatheorsMode {
 	void setup();
 	
 	void draw();
-
+	
+	void tidyUp();
+	
 }

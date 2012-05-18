@@ -4,5 +4,6 @@
 	<classpathentry kind="src" path="data"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/Processing"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/Minim"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

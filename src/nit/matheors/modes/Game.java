@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import processing.core.PConstants;
 import processing.core.PImage;
@@ -30,13 +31,15 @@ public class Game extends GameComponent implements MatheorsSettings, PConstants,
 	Spacecraft player1;
 	Spacecraft player2;
 	
-	private List<Qbject> qbjects = new ArrayList<Qbject>();
-	private List<TransientQbject> ltqbjects = new ArrayList<TransientQbject>();
+	private List<Qbject> qbjects = new CopyOnWriteArrayList<Qbject>();
+	private List<TransientQbject> ltqbjects = new CopyOnWriteArrayList<TransientQbject>();
 
 	public void addQbject(Qbject o) {
-		qbjects.add(o);
-		if (o instanceof TransientQbject)
-			ltqbjects.add((TransientQbject) o);
+		synchronized (Matheors.MUTEX) {
+			qbjects.add(o);
+			if (o instanceof TransientQbject)
+				ltqbjects.add((TransientQbject) o);
+		}
 	}
 	
 	private PImage background = null;
@@ -73,10 +76,12 @@ public class Game extends GameComponent implements MatheorsSettings, PConstants,
 				collisions.put(o, new ArrayList<Qbject>());
 			}
 			for (Qbject o2 : qbjects) {
+				if (!collisions.containsKey(o2)) {
+					collisions.put(o2, new ArrayList<Qbject>());
+				}
 				if (o != o2) {
 					// println("Checking " + o.name + " with " + o2.name);
 					if (collisions.get(o).contains(o2)) {
-						;
 						// println(o.name +
 						// " has already been checked for collisions with " +
 						// o2.name);
@@ -87,23 +92,18 @@ public class Game extends GameComponent implements MatheorsSettings, PConstants,
 						// o2.name);
 						o.collideWith(o2);
 					}
-					if (!collisions.containsKey(o2)) {
-						collisions.put(o2, new ArrayList<Qbject>());
-					}
 					collisions.get(o2).add(o);
 				}
 			}
 		}
-		// if (nc > 0)
-		// println("No collisions: " + nc);
 	}
 
 	private List<TransientQbject> removeTransientQbjects() {
 		List<TransientQbject> nltqbjects = new ArrayList<TransientQbject>();
 		for (TransientQbject o : ltqbjects) {
 			if (o.isExhausted()) {
-				// ltqbjects.remove(o);
 				qbjects.remove(o);
+				((Qbject) o).tidyUp();
 			} else {
 				nltqbjects.add(o);
 			}
@@ -135,6 +135,12 @@ public class Game extends GameComponent implements MatheorsSettings, PConstants,
 		ltqbjects = removeTransientQbjects();
 		checkForCollisions();
 		getParent().delay(round(MILLIS_DELAY_PER_DRAW));
+	}
+
+	@Override
+	public void tidyUp() {
+		// TODO Auto-generated method stub
+		
 	}
 	
 }

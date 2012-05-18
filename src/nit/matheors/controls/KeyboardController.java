@@ -3,7 +3,6 @@ package nit.matheors.controls;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
-import nit.matheors.GameComponent;
 import nit.matheors.Matheors;
 import nit.matheors.modes.Game;
 import nit.matheors.modes.InGameComponent;
@@ -24,6 +23,7 @@ public class KeyboardController extends InGameComponent implements Controller {
 		this.reverseThrustKey = reverseThrustKey;
 		this.steerClockwiseKey = steerClockwiseKey;
 		this.steerAntiClockwiseKey = steerAntiClockwiseKey;
+		this.fireKey = fireKey;
 	}
 
 	@Override

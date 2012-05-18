@@ -1,5 +1,6 @@
 package nit.matheors;
 
+import ddf.minim.Minim;
 import nit.matheors.modes.Game;
 import nit.matheors.modes.MatheorsMode;
 import nit.matheors.modes.MainMenu;
@@ -29,6 +30,8 @@ public class Matheors extends PApplet implements MatheorsSettings {
 	private MatheorsMode currentGame;
 	private MatheorsMode currentEnding;
 	
+	private Minim minim;
+	
 	public void startGame(int noOfPlayers) {
 		currentGame = new Game(this);
 		currentGame.setup();
@@ -43,6 +46,7 @@ public class Matheors extends PApplet implements MatheorsSettings {
 		}
 		size(round(SCREEN_WIDTH), round(SCREEN_HEIGHT));		
 		defaultFont = loadFont("CourierNewPSMT-22.vlw");
+		minim = new Minim(this);
 		
 		mainMenu = new MainMenu(this);
 		mainMenu.setup();
@@ -61,6 +65,10 @@ public class Matheors extends PApplet implements MatheorsSettings {
 				break;
 		}
 		
+	}
+
+	public Minim getMinim() {
+		return minim;
 	}
 
 }
