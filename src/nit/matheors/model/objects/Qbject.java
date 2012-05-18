@@ -4,106 +4,96 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Stack;
-
+import nit.matheors.Coordinates;
+import nit.matheors.GameComponent;
 import nit.matheors.Matheors;
-import nit.matheors.model.TemporaryVector;
-import nit.matheors.model.MotionVector;
+import nit.matheors.MatheorsSettings;
+import nit.matheors.model.TransientVector;
+import nit.matheors.model.Vector;
 import processing.core.PApplet;
 import static processing.core.PApplet.abs;
 import static processing.core.PApplet.sin;
 import static processing.core.PApplet.cos;
+import static processing.core.PApplet.radians;
 
-public abstract class Qbject {
+public abstract class Qbject extends GameComponent implements MatheorsSettings {
 
-	protected PApplet parent;
-	
-	protected Stack<Coordinates> pcs = new Stack<Coordinates>();
 	protected Coordinates compos;
 	protected float massKg;
-	protected float _width;
-	protected float _height;
+	protected float width;
+	protected float height;
+	protected float angle;	
 	protected String name;
 
-	protected Qbject(PApplet p, float massKg, Coordinates compos, float _width, float _height,
-			TemporaryVector initForce) {
-		this.parent = p;
+	protected Qbject(Matheors p, float massKg, Coordinates compos, float width, float height,
+			Vector initVelocity) {
+		super(p);
 		this.massKg = massKg;
 		this.compos = compos;
-		this._width = _width;
-		this._height = _height;
-		addForce(0, initForce);
+		this.width = width;
+		this.height = height;		
+		this.angle = initVelocity.getDirection();
 		
-		rightMotionVector = new MotionVector(parent, 0);
-		upMotionVector = new MotionVector(parent, 90);
-		leftMotionVector = new MotionVector(parent, 180);
-		downMotionVector = new MotionVector(parent, 270);
+		// Distribute the initial velocity over the 4 directions
+		
+		float[] velocities = new float[] { 0f, 0f, 0f, 0f }; // RIGHT, UP, LEFT, DOWN
+		
+		float norDeg = initVelocity.getDirection() % 90;
+		int quadrant = (int) initVelocity.getDirection() / 90; // 0: 0-89, 1: 90-179, 2:
+												// 180-269, 3: 270-359
+		float riser = sin(radians(norDeg)) * initVelocity.getMagnitude();
+		float runner = cos(radians(norDeg)) * initVelocity.getMagnitude();
+		velocities[quadrant % 4] = runner;
+		velocities[(quadrant + 1) % 4] = riser;
+		velocity0 = velocities[0];
+		velocity90 = velocities[1];
+		velocity180 = velocities[2];
+		velocity270 = velocities[3];
+		
 	}
 
-	protected MotionVector rightMotionVector;
-	protected MotionVector upMotionVector;
-	protected MotionVector leftMotionVector;
-	protected MotionVector downMotionVector;
+	protected float velocity0 = 0f;
+	protected float velocity90 = 0f;
+	protected float velocity180 = 0f;
+	protected float velocity270 = 0f;
 
 	protected List<Coordinates> vertices = new ArrayList<Coordinates>();
 
 	public abstract boolean explodeOnCollision();
 
-	float getLeftmostPoint() {
-		float res = Matheors.WIDTH + 1000;
-		for (Coordinates v : vertices)
-			if (v.x < res)
-				res = v.x;
-		return res;
+	protected float calculateAcceleration(float newtons) {
+		return newtons / massKg;
+	}
+	
+	protected float calculateDisplacement(float velocity, float acceleration, float newtons) {
+		float displacement = (float) ((velocity * Matheors.SECONDS_PER_TICK) + (0.5 * acceleration * PApplet.pow(
+				Matheors.SECONDS_PER_TICK, 2)));
+		if (displacement < 0)
+			return 0;
+		else
+			return displacement;
 	}
 
-	float getRightmostPoint() {
-		float res = -1000;
-		for (Coordinates v : vertices)
-			if (v.x > res)
-				res = v.x;
-		return res;
+	protected float calculateMomentum(float velocity) {
+		return velocity * massKg;
 	}
 
-	float getCentrePointX() {
-		return this.getRightmostPoint()
-				- ((this.getRightmostPoint() - this.getLeftmostPoint()) / 2);
-	}
-
-	float getCentrePointY() {
-		return this.getDownmostPoint()
-				- ((this.getDownmostPoint() - this.getUpmostPoint()) / 2);
-	}
-
-	float getUpmostPoint() {
-		float res = Matheors.HEIGHT + 1000;
-		for (Coordinates v : vertices)
-			if (v.y < res)
-				res = v.y;
-		return res;
-	}
-
-	float getDownmostPoint() {
-		float res = -1000;
-		for (Coordinates v : vertices)
-			if (v.y > res)
-				res = v.y;
-		return res;
-	}
-
-	protected Map<Integer, TemporaryVector> forces = new HashMap<Integer, TemporaryVector>();
+	protected Map<Integer, Vector> forces = new HashMap<Integer, Vector>();
+	
 	private int forceNumber = 0;
 
-	void addForce(TemporaryVector f) {
-		addForce(++forceNumber, f);
+	void addForce(Vector f) {
+		setForce(++forceNumber, f);
 	}
 
-	protected void addForce(int id, TemporaryVector f) {
+	protected void setForce(int id, Vector f) {
 		forces.put(id, f);
 	}
 
 	float calcArea(Coordinates a, Coordinates b, Coordinates c) {
-		return calcArea(a.x, a.y, b.x, b.y, c.x, c.y);
+		return calcArea(a.getX(), a.getY(), 
+				b.getX(), b.getY(), 
+				c.getX(), c.getY());
 	}
 
 	float calcArea(float a1, float a2, float b1, float b2, float c1,
@@ -123,10 +113,10 @@ public abstract class Qbject {
 	public boolean hasCollidedWith(Qbject other) {
 		if (this.name.equals("shot") && (other.name.equals("shot")))
 			return false;
-		if (compos.x < 0 || compos.x > Matheors.WIDTH || compos.y < 0
-				|| compos.y > Matheors.HEIGHT || other.compos.x < 0
-				|| other.compos.x > Matheors.WIDTH || other.compos.y < 0
-				|| other.compos.y > Matheors.HEIGHT)
+		if (compos.getX() < 0 || compos.getX() > SCREEN_WIDTH || compos.getY() < 0
+				|| compos.getY() > SCREEN_HEIGHT || other.compos.getX() < 0
+				|| other.compos.getX() > SCREEN_WIDTH || other.compos.getY() < 0
+				|| other.compos.getY() > SCREEN_HEIGHT)
 			return false;
 		Coordinates cm = this.compos;
 		Coordinates cc = null;
@@ -138,13 +128,13 @@ public abstract class Qbject {
 			// a1((b2*c3)-(c2*b3))-a2((b1*c3)-(c1*b3))+a3((b1*c2)-(c1*b2))
 			float art = calcArea(cc, cm, ct);
 			for (Coordinates co : other.vertices) {
-				if (abs(this.compos.x - co.x) < abs(this.compos.x - cm.x)
-						|| abs(this.compos.x - cc.x) < abs(this.compos.x
-								- cc.x))
+				if (abs(this.compos.getX() - co.getX()) < abs(this.compos.getX() - cm.getX())
+						|| abs(this.compos.getX() - cc.getY()) < abs(this.compos.getX()
+								- cc.getX()))
 					continue;
-				if (abs(this.compos.y - co.y) < abs(this.compos.y - cm.y)
-						|| abs(this.compos.y - cc.y) < abs(this.compos.y
-								- cc.y))
+				if (abs(this.compos.getY() - co.getY()) < abs(this.compos.getY() - cm.getY())
+						|| abs(this.compos.getY() - cc.getY()) < abs(this.compos.getY()
+								- cc.getY()))
 					continue;
 				/*
 				 * println("The area is of 1 of " + other.name + " is " +
@@ -162,9 +152,9 @@ public abstract class Qbject {
 					// this.moveToPreviousPosition();
 					// other.moveToPreviousPosition();
 					/*
-					 * this.compos.x = this.pcompos.x; this.compos.y =
-					 * this.pcompos.y; other.compos.x = other.pcompos.x;
-					 * other.compos.y = other.pcompos.y;
+					 * this.compos.getX() = this.pcompos.getX(); this.compos.getY() =
+					 * this.pcompos.getY(); other.compos.getX() = other.pcompos.getX();
+					 * other.compos.getY() = other.pcompos.getY();
 					 */
 					return true;
 				}
@@ -174,18 +164,6 @@ public abstract class Qbject {
 		return false;
 	}
 
-	Coordinates getPreviousPosition() {
-		return pcs.pop();
-	}
-
-	void moveToPreviousPosition() {
-		if (!pcs.empty()) {
-			Coordinates pcompos = getPreviousPosition();
-			compos.x = pcompos.x;
-			compos.y = pcompos.y;
-		}
-	}
-
 	public void collideWith(Qbject other) {
 		doCollide0(other);
 		doCollide90(other);
@@ -193,76 +171,40 @@ public abstract class Qbject {
 
 	void doCollide90(Qbject other) {
 		// Find the velocity of the 2-Qbject system.
-		float sysv = (this.upMotionVector.calculateMomentum(massKg) + other.upMotionVector
-				.calculateMomentum(other.massKg))
+		float sysv = (calculateMomentum(velocity90) + 
+				other.calculateMomentum(other.velocity90))
 				/ (this.massKg + other.massKg);
-		// println("Initial velcoity 1: " + this.upMotionVector.velocity);
-		// println("Initial velcoity 2: " + other.upMotionVector.velocity);
-		// println("System Velcoity: " + sysv);
 		// Next we find the velocity of each Qbject in the coordinate system
 		// (frame) that is moving along with the center of mass.
-		float vcmt = this.upMotionVector.getVelocity() - sysv;
-		float vcmo = other.upMotionVector.getVelocity() - sysv;
+		float vcmt = this.velocity90 - sysv;
+		float vcmo = other.velocity90 - sysv;
 		// Next we reflect (reverse) each velocity in this center of mass
 		// frame, and translate back to the stationary coordinate system.
 		float vft = (vcmt * -1) + sysv;
 		float vfo = (vcmo * -1) + sysv;
-		this.upMotionVector.setVelocity(vft);
-		this.downMotionVector.setVelocity(vft * -1);
-		other.upMotionVector.setVelocity(vfo);
-		other.downMotionVector.setVelocity(vfo * -1);
-
-		// println("Final velcoity 1: " + vft);
-		// println("Final velcoity 2: " + vfo);
-		// Now we know the change in velocity for each object so we can
-		// calculate the impluse
-		// float impt = ((vft - this.upMotionVector.velocity) * this.massKg)
-		// / SECONDS_PER_TICK;
-		// println("Impulse 1: " + impt);
-		// this.addForce(new Force(90, impt, 1));
-		// float impo = ((vfo - other.upMotionVector.velocity) *
-		// other.massKg) / SECONDS_PER_TICK;
-		// println("Impulse 2: " + impo);
-		// other.addForce(new Force(90, impo, 1));
-
+		this.velocity90 = vft;
+		this.velocity270 = vft * -1;
+		other.velocity90 = vfo;
+		other.velocity270 = vfo * -1;
 	}
 
 	void doCollide0(Qbject other) {
 		// Find the velocity of the 2-Qbject system.
-		float sysv = (this.rightMotionVector.calculateMomentum(massKg) + other.rightMotionVector
-				.calculateMomentum(other.massKg))
+		float sysv = (calculateMomentum(velocity0) + 
+				other.calculateMomentum(other.velocity0))
 				/ (this.massKg + other.massKg);
-		// println("Initial velcoity 1: " +
-		// this.rightMotionVector.velocity);
-		// println("Initial velcoity 2: " +
-		// other.rightMotionVector.velocity);
-		// println("System Velcoity: " + sysv);
 		// Next we find the velocity of each Qbject in the coordinate system
 		// (frame) that is moving along with the center of mass.
-		float vcmt = this.rightMotionVector.getVelocity() - sysv;
-		float vcmo = other.rightMotionVector.getVelocity() - sysv;
+		float vcmt = this.velocity0 - sysv;
+		float vcmo = other.velocity0 - sysv;
 		// Next we reflect (reverse) each velocity in this center of mass
 		// frame, and translate back to the stationary coordinate system.
 		float vft = (vcmt * -1) + sysv;
 		float vfo = (vcmo * -1) + sysv;
-		this.rightMotionVector.setVelocity(vft);
-		this.leftMotionVector.setVelocity(vft * -1);
-		other.rightMotionVector.setVelocity(vfo);
-		other.leftMotionVector.setVelocity(vfo * -1);
-
-		// println("Final velcoity 1: " + vft);
-		// println("Final velcoity 2: " + vfo);
-		// Now we know the change in velocity for each object so we can
-		// calculate the impluse
-		// float impt = ((vft - this.rightMotionVector.velocity) *
-		// this.massKg) / SECONDS_PER_TICK;
-		// println("Impulse 1: " + impt);
-		// this.addForce(new Force(0, impt, 1));
-		// float impo = ((vfo - other.rightMotionVector.velocity) *
-		// other.massKg) / SECONDS_PER_TICK;
-		// println("Impulse 2: " + impo);
-		// other.addForce(new Force(0, impo, 1));
-
+		this.velocity0 = vft;
+		this.velocity180 = vft * -1;
+		other.velocity0 = vfo;
+		other.velocity180 = vfo * -1;
 	}
 
 	public void move() {
@@ -271,9 +213,10 @@ public abstract class Qbject {
 		// Calculate the net force on the object for all directions
 		float[] netForce = new float[] { 0f, 0f, 0f, 0f }; // RIGHT, UP,
 															// LEFT, DOWN
-		for (TemporaryVector f : forces.values()) {
+		for (Vector f : forces.values()) {
 
-			if (f.isExhausted())
+			if (f instanceof TransientVector && 
+					((TransientVector)f).isExhausted())
 				continue;
 
 			float norDeg = f.getDirection() % 90;
@@ -281,8 +224,8 @@ public abstract class Qbject {
 													// 180-269, 3: 270-359
 			// Use Pythagorean Theorem to calculate the runner and riser
 			// forces
-			float riserForce = PApplet.sin(PApplet.radians(norDeg)) * f.getMagnitude();
-			float runnerForce = PApplet.cos(PApplet.radians(norDeg)) * f.getMagnitude();
+			float riserForce = sin(radians(norDeg)) * f.getMagnitude();
+			float runnerForce = cos(radians(norDeg)) * f.getMagnitude();
 			netForce[quadrant % 4] += runnerForce;
 			netForce[(quadrant + 1) % 4] += riserForce;
 		}
@@ -294,63 +237,66 @@ public abstract class Qbject {
 		 */
 
 		// Calculate the displacement to move for each vector
-
+		float accel = 0;
 		float disp = 0;
-		disp = rightMotionVector.calculateDisplacement(massKg, netForce[0]
-				- netForce[2])
-				* Matheors.METRES_PER_PIXEL;
-		dispXY.x += (cos(PApplet.radians(rightMotionVector.getDirection())) * disp);
-		dispXY.y += (sin(PApplet.radians(rightMotionVector.getDirection())) * disp * -1);
+		float newtons = 0;
+		
+		// Velocity rightwards
+		newtons = netForce[0] - netForce[2];
+		accel = calculateAcceleration(newtons);
+		disp = calculateDisplacement(velocity0, accel, newtons)
+				* METRES_PER_PIXEL;
+		dispXY.addX(cos(radians(0f)) * disp);
+		dispXY.addY(sin(radians(0f)) * disp * -1);
+		velocity0 += accel * Matheors.SECONDS_PER_TICK;
 
-		disp = upMotionVector.calculateDisplacement(massKg, netForce[1]
-				- netForce[3])
-				* Matheors.METRES_PER_PIXEL;
-		dispXY.x += (cos(PApplet.radians(upMotionVector.getDirection())) * disp);
-		dispXY.y += (sin(PApplet.radians(upMotionVector.getDirection())) * disp * -1);
+		// Velocity upwards
+		newtons = netForce[1] - netForce[3];
+		accel = calculateAcceleration(newtons);
+		disp = calculateDisplacement(velocity90, massKg, newtons)
+				* METRES_PER_PIXEL;
+		dispXY.addX(cos(radians(90f)) * disp);
+		dispXY.addY(sin(radians(90f)) * disp * -1);
+		velocity90 += accel * Matheors.SECONDS_PER_TICK;
 
-		disp = leftMotionVector.calculateDisplacement(massKg, netForce[2]
-				- netForce[0])
-				* Matheors.METRES_PER_PIXEL;
-		dispXY.x += (cos(PApplet.radians(leftMotionVector.getDirection())) * disp);
-		dispXY.y += (sin(PApplet.radians(leftMotionVector.getDirection())) * disp * -1);
+		// Velocity leftwards
+		newtons = netForce[2] - netForce[0];
+		accel = calculateAcceleration(newtons);
+		disp = calculateDisplacement(velocity180, massKg, newtons)
+				* METRES_PER_PIXEL;
+		dispXY.addX(cos(radians(180f)) * disp);
+		dispXY.addY(sin(radians(180f)) * disp * -1);
+		velocity180 += accel * Matheors.SECONDS_PER_TICK;
 
-		disp = downMotionVector.calculateDisplacement(massKg, netForce[3]
-				- netForce[1])
-				* Matheors.METRES_PER_PIXEL;
-		dispXY.x += (cos(PApplet.radians(downMotionVector.getDirection())) * disp);
-		dispXY.y += (sin(PApplet.radians(downMotionVector.getDirection())) * disp * -1);
+		// Velocity downwards
+		newtons = netForce[3] - netForce[1];
+		accel = calculateAcceleration(newtons);
+		disp = calculateDisplacement(velocity270, massKg, newtons)
+				* METRES_PER_PIXEL;
+		dispXY.addX(cos(radians(270f)) * disp);
+		dispXY.addY(sin(radians(270f)) * disp * -1);
+		velocity270 += accel * Matheors.SECONDS_PER_TICK;
 
-		// Set the new compos of the object,
-		// rounding to the nearest pixel
-		if (!pcs.empty()) {
-			Coordinates pcompos = pcs.peek();
-			if (pcompos.x != compos.x || pcompos.y != compos.y) {
-				pcs.push(new Coordinates(compos.x, compos.y));
-			}
-		} else {
-			pcs.push(new Coordinates(compos.x, compos.y));
-		}
-
-		compos.x += dispXY.x;
-		compos.y += dispXY.y;
+		compos.addX(dispXY.getX());
+		compos.addY(dispXY.getY());
 
 		// Wrap to the opposite side of the screen
 		// if the object's position exceeds it
-		if (compos.x > Matheors.WIDTH + _width)
-			compos.x = _width * -1;
-		if (compos.x < 0 - _width)
-			compos.x = Matheors.WIDTH + _width;
-		if (compos.y > Matheors.HEIGHT + _height)
-			compos.y = _height * -1;
-		if (compos.y < 0 - _height)
-			compos.y = Matheors.HEIGHT + _height;
+		if (compos.getX() > SCREEN_WIDTH + width)
+			compos.setX(width * -1);
+		if (compos.getX() < 0 - width)
+			compos.setX(SCREEN_WIDTH + width);
+		if (compos.getY() > SCREEN_HEIGHT + height)
+			compos.setY(height * -1);
+		if (compos.getY() < 0 - height)
+			compos.setY(SCREEN_HEIGHT + height);
 	}
 
 	public void paintStats() {
-		rightMotionVector.showStats(Matheors.WIDTH - 170, Matheors.HALF_HEIGHT + 15);
-		upMotionVector.showStats(Matheors.HALF_WIDTH + 15, 15);
-		leftMotionVector.showStats(25, Matheors.HALF_HEIGHT + 15);
-		downMotionVector.showStats(Matheors.HALF_WIDTH + 20, Matheors.HEIGHT - 40);
+		/*velocity0.showStats(SCREEN_WIDTH - 170, HALF_HEIGHT + 15);
+		velocity90.showStats(HALF_WIDTH + 15, 15);
+		velocity180.showStats(25, HALF_HEIGHT + 15);
+		velocity270.showStats(HALF_WIDTH + 20, SCREEN_HEIGHT - 40);*/
 	}
 
 	public abstract void paint();

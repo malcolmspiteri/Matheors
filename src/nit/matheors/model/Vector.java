@@ -1,12 +1,23 @@
 package nit.matheors.model;
 
-public abstract class Vector {
+public class Vector {
 	protected float direction;
 	protected float magnitude;
+	
+	public Vector() {
+		
+	}
+	
+	public Vector(float direction, float magnitude) {
+		super();
+		this.direction = direction;
+		this.magnitude = magnitude;
+	}
 	
 	public float getMagnitude() {
 		return magnitude;
 	}
+	
 	public void setMagnitude(float magnitude) {
 		this.magnitude = magnitude;
 	}
