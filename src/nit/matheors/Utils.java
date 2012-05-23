@@ -11,4 +11,8 @@ public abstract class Utils {
 		return sqrt((distX * distX) + (distY * distY));		
 	}
 	
+	public static float calculateMomentum(float velocity, float massKg) {
+		return velocity * massKg;
+	}
+
 }

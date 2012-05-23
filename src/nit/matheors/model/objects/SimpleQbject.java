@@ -9,25 +9,27 @@ public abstract class SimpleQbject extends Qbject {
 
 	protected float radious;
 
-	public SimpleQbject(Matheors p, float massKg, Coordinates compos,
-			float width, float height, Vector initVelocity, float radious) {
-		super(p, massKg, compos, width, height, initVelocity);
+	public SimpleQbject(Matheors p, float massKg, float strength, Coordinates compos,
+			Vector initVelocity, float radious) {
+		super(p, massKg, strength, compos, initVelocity);
 		this.radious = radious;
 	}
 	
-	public boolean hasCollidedWith(ComplexQbject other) {
-		for (Coordinates v : other.vertices) {
-			if (calcDistance(v, other.compos) < radious)
-				return true;
-		}
-		return false;
-	}
-	
-	public boolean hasCollidedWith(SimpleQbject other) {
-		if (calcDistance(compos, other.compos) < (radious + other.radious))
-			return true;
-		else
+	public boolean determineIfCollisionOccurredWith(Qbject other) {
+		if (other instanceof ComplexQbject) {
+			ComplexQbject cother = (ComplexQbject) other;
+			for (Coordinates v : cother.vertices) {
+				if (calcDistance(v, compos) < radious)
+					return true;
+			}
 			return false;
+		} else {
+			SimpleQbject sother = (SimpleQbject) other;
+			if (calcDistance(compos, other.compos) < (radious + sother.radious))
+				return true;
+			else
+				return false;
+		}
 	}
 	
 }

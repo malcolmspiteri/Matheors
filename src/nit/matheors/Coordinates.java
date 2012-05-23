@@ -1,6 +1,6 @@
 package nit.matheors;
 
-final public class Coordinates {
+final public class Coordinates implements Cloneable {
 	private float x;
 	public float getX() {
 		return x;
@@ -33,4 +33,18 @@ final public class Coordinates {
 		this.y = e;
 	}
 
+	public Coordinates createClone() {
+		try {
+			return (Coordinates) this.clone();
+		} catch (CloneNotSupportedException e) {
+			// I hate Java's check exceptions
+			throw new RuntimeException("Error while cloneing a Coordicates instance", e);
+		}
+	}
+	
+	public Object clone() throws CloneNotSupportedException {
+
+	    return new Coordinates(x,  y);
+
+	 }
 }

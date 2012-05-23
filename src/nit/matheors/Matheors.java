@@ -2,12 +2,13 @@ package nit.matheors;
 
 import ddf.minim.Minim;
 import nit.matheors.modes.Game;
+import nit.matheors.modes.GameEnding;
 import nit.matheors.modes.MatheorsMode;
 import nit.matheors.modes.MainMenu;
 import processing.core.PApplet;
 import processing.core.PFont;
 
-public class Matheors extends PApplet implements MatheorsSettings {
+public class Matheors extends PApplet implements MatheorsConstants {
 
 	/**
 	 * 
@@ -16,9 +17,7 @@ public class Matheors extends PApplet implements MatheorsSettings {
 
 	public static transient final Object MUTEX = new Object();
 	
-	private enum Mode { MAIN_MENU, GAME, ENDING }
-	
-	private Mode mode = Mode.MAIN_MENU;
+	private GameMode mode = GameMode.MAIN_MENU;
 	
 	private PFont defaultFont;	
 
@@ -33,11 +32,26 @@ public class Matheors extends PApplet implements MatheorsSettings {
 	private Minim minim;
 	
 	public void startGame(int noOfPlayers) {
-		currentGame = new Game(this);
+		currentGame = new Game(this, noOfPlayers);
 		currentGame.setup();
-		mode = Mode.GAME;
+		mode = GameMode.GAME;
 	}
 	
+	public void endCurrentGame() {
+		currentGame.tidyUp();
+		currentEnding = new GameEnding(this, (Game) currentGame);
+		currentEnding.setup();
+		mode = GameMode.ENDING;
+	}
+	
+	public void mainMenu() {
+		mode = GameMode.MAIN_MENU;
+	}
+
+	public GameMode getMode() {
+		return mode;
+	}
+
 	public void setup() {
 		if (DEBUG) {
 			System.out.println("FPS: " + FPS);
@@ -45,7 +59,7 @@ public class Matheors extends PApplet implements MatheorsSettings {
 			System.out.println("SECONDS_PER_TICK: " + SECONDS_PER_TICK);
 		}
 		size(round(SCREEN_WIDTH), round(SCREEN_HEIGHT));		
-		defaultFont = loadFont("CourierNewPSMT-22.vlw");
+		defaultFont = loadFont("Arial-BoldMT-48.vlw");
 		minim = new Minim(this);
 		
 		mainMenu = new MainMenu(this);
@@ -53,16 +67,22 @@ public class Matheors extends PApplet implements MatheorsSettings {
 	}
 	
 	public void draw() {
-		switch (mode) {
-			case MAIN_MENU:
-				mainMenu.draw();
-				break;
-			case GAME:
-				currentGame.draw();
-				break;
-			case ENDING:
-				currentEnding.draw();
-				break;
+		frameRate(FPS);
+		
+		try {
+			switch (mode) {
+				case MAIN_MENU:
+					mainMenu.draw();
+					break;
+				case GAME:
+					currentGame.draw();
+					break;
+				case ENDING:
+					currentEnding.draw();
+					break;
+			}
+		} catch (Exception e) {
+			throw new RuntimeException("An error occurred during the game", e);
 		}
 		
 	}

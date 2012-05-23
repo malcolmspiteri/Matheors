@@ -3,32 +3,39 @@ package nit.matheors.controls;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
+import nit.matheors.CanTidyUp;
+import nit.matheors.GameComponent;
 import nit.matheors.Matheors;
-import nit.matheors.modes.Game;
-import nit.matheors.modes.InGameComponent;
+import nit.matheors.model.objects.Qbject;
 
-public class KeyboardController extends InGameComponent implements Controller {
+public class KeyboardController extends GameComponent implements Controller, CanTidyUp {
 
 	private int thrustKey;
 	private int reverseThrustKey;
 	private int steerClockwiseKey;
 	private int steerAntiClockwiseKey;
 	private int fireKey;
+	private int switchToAdditionGunKey;
+	private int switchToSubtractionGunKey;
 	
 	
-	public KeyboardController(Matheors p, Game g, int thrustKey, int reverseThrustKey,
-			int steerClockwiseKey, int steerAntiClockwiseKey, int fireKey) {
-		super(p, g);
+	public KeyboardController(Matheors p, int thrustKey, int reverseThrustKey,
+			int steerClockwiseKey, int steerAntiClockwiseKey, int fireKey, int switchToAdditionGunKey, int switchToSubtractionGunKey) {
+		super(p);
 		this.thrustKey = thrustKey;
 		this.reverseThrustKey = reverseThrustKey;
 		this.steerClockwiseKey = steerClockwiseKey;
 		this.steerAntiClockwiseKey = steerAntiClockwiseKey;
 		this.fireKey = fireKey;
+		this.switchToAdditionGunKey = switchToAdditionGunKey;
+		this.switchToSubtractionGunKey = switchToSubtractionGunKey;
 	}
 
+
+	private KeyListener listener;
 	@Override
 	public void control(final Controllable controllable) {
-		getParent().addKeyListener(new KeyListener() {
+		listener = new KeyListener() {
 			
 			@Override
 			public void keyTyped(KeyEvent e) {
@@ -43,6 +50,9 @@ public class KeyboardController extends InGameComponent implements Controller {
 				if (e.getKeyCode() == steerClockwiseKey || e.getKeyCode() == steerAntiClockwiseKey) {
 					controllable.steeringOff();
 				}
+				if (e.getKeyCode() == fireKey) {
+					controllable.stopFiring();
+				}				
 			}
 			
 			@Override
@@ -59,12 +69,29 @@ public class KeyboardController extends InGameComponent implements Controller {
 				if (e.getKeyCode() == steerAntiClockwiseKey) {
 					controllable.rotateAntiClockwise();
 				}
-				if (e.getKeyChar() == 'c') {
-					getGame().addQbject(controllable.fire());
+				if (e.getKeyCode() == fireKey) {
+					controllable.startFiring();
 				}				
+				if (e.getKeyCode() == switchToAdditionGunKey) {
+					controllable.switchToAdditionGun();
+				}
+				if (e.getKeyCode() == switchToSubtractionGunKey) {
+					controllable.switchToSubtractionGun();
+				}
+				if (e.getKeyChar() == 'i') {
+					Qbject q = (Qbject) controllable;
+					System.out.println(q.getMotionAngle());
+				}
 			}
-		});
+		};
+		getParent().addKeyListener(listener);
 		
+	}
+
+
+	@Override
+	public void tidyUp() {
+		getParent().removeKeyListener(listener);		
 	}
 
 }

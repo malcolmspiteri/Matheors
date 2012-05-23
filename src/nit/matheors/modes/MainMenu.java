@@ -8,6 +8,7 @@ import ddf.minim.AudioPlayer;
 import processing.core.PConstants;
 import processing.core.PImage;
 import nit.matheors.GameComponent;
+import nit.matheors.GameMode;
 import nit.matheors.Matheors;
 
 public class MainMenu extends GameComponent implements MatheorsMode, PConstants {
@@ -27,6 +28,7 @@ public class MainMenu extends GameComponent implements MatheorsMode, PConstants 
 	@Override
 	public void setup() {
 		mainmenu = getParent().loadImage("images\\mainmenu.png");
+
 		music.loop();
 		
 		getParent().addKeyListener(new KeyListener() {
@@ -42,18 +44,20 @@ public class MainMenu extends GameComponent implements MatheorsMode, PConstants 
 			}
 			
 			@Override
-			public void keyPressed(KeyEvent e) {				
-				if (e.getKeyChar() == '1') {
-					music.pause();
-					getParent().startGame(1);
-				}				
-				if (e.getKeyChar() == '2') {
-					music.pause();
-					getParent().startGame(2);
-				}				
-				if (e.getKeyChar() == 'e') {
-					getParent().startGame(1);
-				}				
+			public void keyPressed(KeyEvent e) {		
+				if (getParent().getMode() == GameMode.MAIN_MENU) {
+					if (e.getKeyChar() == '1') {
+						getParent().startGame(1);
+						music.pause();
+					}				
+					if (e.getKeyChar() == '2') {
+						getParent().startGame(2);
+						music.pause();
+					}				
+					if (e.getKeyChar() == 'e') {
+						getParent().startGame(1);
+					}
+				}
 			}
 		});
 		
@@ -61,11 +65,12 @@ public class MainMenu extends GameComponent implements MatheorsMode, PConstants 
 
 	@Override
 	public void draw() {
-		if (!music.isLooping())
-			music.loop();
-		
-		getParent().imageMode(CORNER);
+		//getParent().background(mainmenu);
+		getParent().imageMode(CORNERS);
 		getParent().image(mainmenu, 0, 0);
+
+		if (!music.isPlaying())
+			music.loop();
 		
 	}
 

@@ -5,7 +5,8 @@ public class Vector {
 	protected float magnitude;
 	
 	public Vector() {
-		
+		this.direction = 0;
+		this.magnitude = 0;		
 	}
 	
 	public Vector(float direction, float magnitude) {

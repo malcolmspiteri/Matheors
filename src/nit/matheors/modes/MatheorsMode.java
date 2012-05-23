@@ -4,7 +4,7 @@ public interface MatheorsMode {
 
 	void setup();
 	
-	void draw();
+	void draw() throws Exception;
 	
 	void tidyUp();
 	

@@ -1,7 +1,5 @@
 package nit.matheors.controls;
 
-import nit.matheors.model.objects.Qbject;
-
 public interface Controllable {
 
 	void reverseThrust();
@@ -14,8 +12,18 @@ public interface Controllable {
 	
 	void rotateAntiClockwise();
 	
+	void rotateBy(float deg);
+	
 	void steeringOff();
 	
-	Qbject fire();
+	void startFiring();
+	
+	void stopFiring();
+	
+	void switchToAdditionGun();
+	
+	void switchToSubtractionGun();
+	
+	float getAngle();
 
 }
