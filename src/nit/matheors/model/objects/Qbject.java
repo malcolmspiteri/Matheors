@@ -149,8 +149,6 @@ public abstract class Qbject extends GameComponent implements Cloneable, Matheor
 	protected float velocity180 = 0f;
 	protected float velocity270 = 0f;
 
-	public abstract boolean tidyUp();
-	
 	protected float calculateAcceleration(float newtons) {
 		if (massKg > 0)
 			return newtons / massKg;
@@ -207,17 +205,17 @@ public abstract class Qbject extends GameComponent implements Cloneable, Matheor
 	
 	public abstract boolean determineIfCollisionOccurredWith(Qbject other);
 
-	public boolean collideWith(float otherMassKg, float otherVel0, float otherVel90, Class<? extends Qbject> otherClazz) throws Exception {
-		collide0(otherMassKg, otherVel0);
-		collide90(otherMassKg, otherVel90);
+	public boolean collideWith(Qbject other) throws Exception {
+		collide0(other.getMassKg(), other.getVelocity0());
+		collide90(other.getMassKg(), other.getVelocity90());
 		moveToPreviousPosition();
 		return false;
 	}
 
-	public boolean collideAndMaybeExplodeWith(float otherMassKg, float otherVel0, float otherVel90, Class<? extends Qbject> otherClazz) throws Exception {
+	public boolean collideAndMaybeExplodeWith(Qbject other) throws Exception {
 		float impulse = 0;
-		impulse += collide0(otherMassKg, otherVel0);
-		impulse += collide90(otherMassKg, otherVel90);
+		impulse += collide0(other.getMassKg(), other.getVelocity0());
+		impulse += collide90(other.getMassKg(), other.getVelocity90());
 		if (impulse > strength) {
 			explode();
 			return true;
@@ -227,7 +225,7 @@ public abstract class Qbject extends GameComponent implements Cloneable, Matheor
 		}
 	}
 
-	public float getMotionAngle() {
+	public Vector getMotionVector() {
 		float a = angle;
 		if (velocity0 > 0)
 			a = 0;
@@ -250,7 +248,10 @@ public abstract class Qbject extends GameComponent implements Cloneable, Matheor
 		if (velocity0 > 0 && velocity270 > 0) {
 			a = 360 + degrees(PApplet.atan(velocity90 / velocity0));
 		}
-		return a;
+		
+		float m = sqrt(pow(velocity0,2) + pow(velocity90,2));
+		
+		return new Vector(a, m);
 	}
 	
 	private float collide90(float otherMassKg, float otherVel90) {

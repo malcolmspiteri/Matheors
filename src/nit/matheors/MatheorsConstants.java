@@ -29,8 +29,9 @@ public interface MatheorsConstants {
 	public final static float MATHEAOR_MASS_HIGH = 80;
 	public final static float MATHEAOR_STRENGTH = 10;
 	public final static float MATHEOR_RADIOUS_BIG = 45;
+	public final static float MATHEOR_RADIOUS_SMALL = 20;
 
-	public final static float SHOT_MASS = 100;
+	public final static float SHOT_MASS = 10;
 	public final static float SHOT_STRENGTH = 0;
 	public final static float SHOT_RADIOUS = 15;
 

@@ -20,6 +20,7 @@ import nit.matheors.controls.KeyboardController;
 import nit.matheors.controls.TUIOController;
 import nit.matheors.model.Vector;
 import nit.matheors.model.objects.Matheor;
+import nit.matheors.model.objects.MatheorSize;
 import nit.matheors.model.objects.Qbject;
 import nit.matheors.model.objects.Shot;
 import nit.matheors.model.objects.ShotType;
@@ -169,15 +170,13 @@ public class Game extends GameComponent implements MatheorsConstants, PConstants
 						// They are in collision
 						
 						// First, we take care of object 1
-						float om = o.getMassKg();
-						float ov0 = o.getVelocity0();
-						float ov90 = o.getVelocity90();
-						boolean o1exploded = o.collideAndMaybeExplodeWith(o2.getMassKg(), o2.getVelocity0(), o2.getVelocity90(), o2.getClass());
+						Qbject oc = o.createClone();
+						boolean o1exploded = o.collideAndMaybeExplodeWith(o2);
 						if (o1exploded && o instanceof Matheor && o2 instanceof Shot) {
 							updateScores((Matheor) o, (Shot) o2);
 						}
 						// Now it's object 2's turn
-						boolean o2exploded = o2.collideAndMaybeExplodeWith(om, ov0, ov90, o.getClass());
+						boolean o2exploded = o2.collideAndMaybeExplodeWith(oc);
 						if (o2exploded && o2 instanceof Matheor && o instanceof Shot) {
 							updateScores((Matheor) o2, (Shot) o);
 						}
@@ -218,7 +217,7 @@ public class Game extends GameComponent implements MatheorsConstants, PConstants
 				matheorSpawnParams[nextMatheorParams][2],
 				matheorSpawnParams[nextMatheorParams][3]);
 		float v = getParent().random(5, 10);
-		return new Matheor(getParent(), getParent().random(MATHEAOR_MASS_LOW, MATHEAOR_MASS_HIGH), new Coordinates(x, y), new Vector(a, v));		
+		return new Matheor(getParent(), this, getParent().random(MATHEAOR_MASS_LOW, MATHEAOR_MASS_HIGH), new Coordinates(x, y), new Vector(a, v), MatheorSize.BIG);		
 	}
 	
 	public void draw() throws Exception {

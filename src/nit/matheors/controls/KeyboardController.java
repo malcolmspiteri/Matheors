@@ -78,10 +78,6 @@ public class KeyboardController extends GameComponent implements Controller, Can
 				if (e.getKeyCode() == switchToSubtractionGunKey) {
 					controllable.switchToSubtractionGun();
 				}
-				if (e.getKeyChar() == 'i') {
-					Qbject q = (Qbject) controllable;
-					System.out.println(q.getMotionAngle());
-				}
 			}
 		};
 		getParent().addKeyListener(listener);

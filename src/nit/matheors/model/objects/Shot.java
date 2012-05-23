@@ -102,16 +102,9 @@ public class Shot extends SimpleQbject implements PConstants {
 
 	
 	@Override
-	public boolean collideAndMaybeExplodeWith(float otherMassKg,
-			float otherVel0, float otherVel90, Class<? extends Qbject> otherClazz) throws Exception {
+	public boolean collideAndMaybeExplodeWith(Qbject other) throws Exception {
 		explode();
 		return true;
-	}
-
-	@Override
-	public boolean tidyUp() {
-		//fire.close();
-		return false;
 	}
 
 	@Override

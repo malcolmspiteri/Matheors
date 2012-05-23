@@ -1,6 +1,7 @@
 package nit.matheors.model.objects;
 
 import ddf.minim.AudioPlayer;
+import nit.matheors.CanTidyUp;
 import nit.matheors.Coordinates;
 import nit.matheors.Matheors;
 import nit.matheors.controls.Controllable;
@@ -17,7 +18,7 @@ import static processing.core.PApplet.sqrt;
 import static processing.core.PApplet.pow;
 import static processing.core.PApplet.abs;
 
-public class Spacecraft extends ComplexQbject implements Controllable, PConstants {
+public class Spacecraft extends ComplexQbject implements Controllable, PConstants, CanTidyUp {
 
 	public Spacecraft(Matheors p, Game g, int type, Coordinates compos, Vector initVelocity) {
 		super(p, SPACECRAFT_MASS, SPACECRAFT_STRENGTH, compos, initVelocity);
@@ -314,10 +315,8 @@ public class Spacecraft extends ComplexQbject implements Controllable, PConstant
 
 	}
 
-	@Override
-	public boolean tidyUp() {
+	public void tidyUp() {
 		hover.close();
-		return false;
 	}
 
 	@Override
