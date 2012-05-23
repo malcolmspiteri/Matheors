@@ -27,6 +27,11 @@ public class Matheor extends SimpleQbject implements PConstants {
 			Vector tmv = getMotionVector();
 			Vector omv = other.getMotionVector();
 			boolean explode =  super.collideAndMaybeExplodeWith(other);
+			
+			// The following block of code implements the matheor split upon explosion.
+			// When hit, the matheor will split into two smaller ones.
+			// I'm disregarding the law of conservation of momentum here to make more arcade-ish
+			
 			if (size == MatheorSize.BIG) {
 
 				float x, y, x1, y1, a;
@@ -37,6 +42,8 @@ public class Matheor extends SimpleQbject implements PConstants {
 				
 				x = (MATHEOR_RADIOUS_SMALL + 1);
 				y = 0;
+
+				// rotate transform
 				a = omv.getDirection() + 90;
 				x1 = (x * cos(radians(a))) - (y * sin(radians(a)));
 				y1 = (x * sin(radians(a))) + (y * cos(radians(a)));
@@ -45,6 +52,7 @@ public class Matheor extends SimpleQbject implements PConstants {
 						new Coordinates(compos.getX() + x1, compos.getY() - y1), 
 						new Vector(a, tmv.getMagnitude()), MatheorSize.SMALL, color, n1));
 				
+				// rotate transform
 				a = omv.getDirection() - 90;
 				x1 = (x * cos(radians(a))) - (y * sin(radians(a)));
 				y1 = (x * sin(radians(a))) + (y * cos(radians(a)));

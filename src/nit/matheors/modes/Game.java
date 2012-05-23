@@ -283,8 +283,12 @@ public class Game extends GameComponent implements MatheorsConstants, PConstants
 
 	@Override
 	public void tidyUp() {		
-		for (CanTidyUp t : tidyUps)
-			t.tidyUp();
+		try {
+			for (CanTidyUp t : tidyUps)
+				t.tidyUp();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 	
 }
