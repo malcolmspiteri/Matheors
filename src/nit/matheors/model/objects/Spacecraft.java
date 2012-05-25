@@ -12,16 +12,18 @@ import processing.core.PApplet;
 import processing.core.PConstants;
 import processing.core.PImage;
 import static processing.core.PApplet.radians;
+import static processing.core.PApplet.degrees;
 import static processing.core.PApplet.sin;
 import static processing.core.PApplet.cos;
 import static processing.core.PApplet.sqrt;
 import static processing.core.PApplet.pow;
 import static processing.core.PApplet.abs;
+import static processing.core.PApplet.floor;
 
 public class Spacecraft extends ComplexQbject implements Controllable, PConstants, CanTidyUp {
 
-	public Spacecraft(Matheors p, Game g, int type, Coordinates compos, Vector initVelocity) {
-		super(p, SPACECRAFT_MASS, SPACECRAFT_STRENGTH, compos, initVelocity);
+	public Spacecraft(Matheors p, Game g, int type, Coordinates compos, Vector initVelocity, float maxVelocity) {
+		super(p, SPACECRAFT_MASS, SPACECRAFT_STRENGTH, compos, initVelocity, maxVelocity);
 
 		this.type = type;
 		this.game = g;
@@ -46,6 +48,7 @@ public class Spacecraft extends ComplexQbject implements Controllable, PConstant
 	private boolean reverseThrustOn = false;
 	private boolean steerClockwiseOn = false;
 	private boolean steerAntiClockwiseOn = false;
+	private float maxVelocity = SPACECRAFT_MAX_VELOCITY;
 
 	protected float getForwardThrust() {
 		return forces.get(FORWARD_THRUSTER).getMagnitude();
@@ -150,7 +153,6 @@ public class Spacecraft extends ComplexQbject implements Controllable, PConstant
 
 	}
 	
-	
 	private void decForce() {
 		setReverseThrust(getReverseThrust() + 50); 
 	}
@@ -164,8 +166,37 @@ public class Spacecraft extends ComplexQbject implements Controllable, PConstant
 		setReverseThrust(0f);
 	}
 
+	private boolean maxVelocityReached(float angle) {
+		float na = angle % 90;
+		float riser = sin(radians(na)) * SPACECRAFT_MAX_VELOCITY;
+		float runner = cos(radians(na)) * SPACECRAFT_MAX_VELOCITY;
+		int qa = floor(angle / 90);
+		switch (qa) {
+			case 0 :
+				if (velocity0 >= runner && velocity90 >= riser)
+					return true;
+				break;
+			case 1 :
+				if (velocity90 >= runner && velocity180 >= riser)
+					return true;
+				break;
+			case 2 :
+				if (velocity180 >= runner && velocity270 >= riser)
+					return true;
+				break;
+			case 3 :
+				if (velocity270 >= runner && velocity0 >= riser)
+					return true;
+				break;
+			
+		}
+		return false;
+	}
+
 	public void move() {
 
+		float abs = angle;
+		
 		if (steerClockwiseOn) {
 			angle -= 10;
 			if (angle < 0)
@@ -180,13 +211,17 @@ public class Spacecraft extends ComplexQbject implements Controllable, PConstant
 			if (thrustOn)
 				calibrateForwardThrust();
 		}
-
-		if (thrustOn) {
-			incForce();
-		}
-
-		if (reverseThrustOn) {
-			decForce();
+		
+		if (!maxVelocityReached(abs)) {
+			if (thrustOn) {
+				incForce();
+			}
+	
+			if (reverseThrustOn) {
+				decForce();
+			}
+		} else {
+			thrustersOff();
 		}
 		
 		if ((firingOn && 
@@ -196,19 +231,20 @@ public class Spacecraft extends ComplexQbject implements Controllable, PConstant
 			fireOnce = false;
 		}
 		
-		// If the velocity is already or beyond the limit, neutralise all forces
-		
-		float v = sqrt(pow(velocity0,2) + pow(velocity90,2));
-		float d = v - 100;
+		super.move();
+
+		// Limit the velocity
+		/*
+		float v = getMotionVector().getMagnitude();
+		float d = v - maxVelocity;
 		
 		if (d > 0) {
-			velocity0 -= (d * (((velocity0*100)/v))/100);
-			velocity90 -= (d * (((velocity90*100)/v))/100);
-			velocity180 -= (d * (((velocity180*100)/v))/100);
-			velocity270 -= (d * (((velocity270*100)/v))/100);
+			velocity0 -= (d * (velocity0 / v));
+			velocity90 -= (d * (velocity90 / v));
+			velocity180 -= (d * (velocity180 / v));
+			velocity270 -= (d * (velocity270 / v));
 		}
-
-		super.move();
+		*/
 
 		// Wrap to the opposite side of the screen
 		// if the object's position exceeds it
@@ -223,9 +259,6 @@ public class Spacecraft extends ComplexQbject implements Controllable, PConstant
 		
 		if (compos.getY() < 0)
 			compos.setY(SCREEN_HEIGHT);
-		
-		// Limit the velocity
-		//if (velocity0 > 10) velocity0 = 10;
 		
 	}
 	
@@ -247,15 +280,22 @@ public class Spacecraft extends ComplexQbject implements Controllable, PConstant
 		else
 			hover.mute();
 		
-		if (thrust <= 20)
-			getParent().image(img0, 0, 0);		
-		else if (thrust >= 21 && thrust <= 30)
-			getParent().image(img1, 0, 0);
-		else if (thrust >= 31 && thrust <= 40)
-			getParent().image(img2, 0, 0);
-		else 
-			getParent().image(img3, 0, 0);
-		
+		if (thrustOn) {
+			float v = getMotionVector().getMagnitude();
+			float v25p = SPACECRAFT_MAX_VELOCITY * 0.25f;
+			float v50p = SPACECRAFT_MAX_VELOCITY * 0.5f;
+			float v75p = SPACECRAFT_MAX_VELOCITY * 0.75f;
+			if (v <= v25p)
+				getParent().image(img0, 0, 0);		
+			else if (v > v25p && v <= v50p)
+				getParent().image(img1, 0, 0);
+			else if (v > v50p && v <= v75p)
+				getParent().image(img2, 0, 0);
+			else 
+				getParent().image(img3, 0, 0);
+		} else {
+			getParent().image(img0, 0, 0);
+		}
 
 		getParent().popMatrix();		
 
@@ -367,6 +407,18 @@ public class Spacecraft extends ComplexQbject implements Controllable, PConstant
 	@Override
 	public void stopFiring() {
 		firingOn = false;		
+	}
+
+	@Override
+	public void setVelocity(float velocity) {
+		this.maxVelocity = velocity;
+		
+	}
+
+	@Override
+	public void fireOnce() {
+		fireOnce = true;
+		
 	}
 
 }

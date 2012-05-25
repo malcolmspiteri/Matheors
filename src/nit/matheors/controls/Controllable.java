@@ -6,6 +6,8 @@ public interface Controllable {
 	
 	void thrust();
 	
+	void setVelocity(float velocity);
+	
 	void thrustersOff();
 	
 	void rotateClockwise();
@@ -19,6 +21,8 @@ public interface Controllable {
 	void startFiring();
 	
 	void stopFiring();
+	
+	void fireOnce();
 	
 	void switchToAdditionGun();
 	

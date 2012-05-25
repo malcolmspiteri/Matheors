@@ -23,6 +23,7 @@ import static processing.core.PApplet.abs;
 import static processing.core.PApplet.pow;
 import static processing.core.PApplet.sqrt;
 import static processing.core.PApplet.degrees;
+import static processing.core.PApplet.floor;
 
 public abstract class Qbject extends GameComponent implements Cloneable, MatheorsConstants, PConstants {
 
@@ -113,12 +114,20 @@ public abstract class Qbject extends GameComponent implements Cloneable, Matheor
 	private static final int LEFT_Q = 2;
 	private static final int DOWN_Q = 3;
 	
+	private float maxVelocity;
+	
 	protected Qbject(Matheors p, float massKg, float strength, Coordinates compos, 	Vector initVelocity) {
+		this(p, massKg, strength, compos, initVelocity, Float.MAX_VALUE);
+	}
+	
+	protected Qbject(Matheors p, float massKg, float strength, Coordinates compos, 	Vector initVelocity, float maxVelocity) {
 		super(p);
 		this.massKg = massKg;
 		this.strength = strength;
 		this.compos = compos;
 		this.angle = initVelocity.getDirection();
+		this.maxVelocity = maxVelocity;
+		
 		pcompos = compos.createClone();
 
 		// Distribute the initial velocity over the 4 directions
@@ -250,7 +259,7 @@ public abstract class Qbject extends GameComponent implements Cloneable, Matheor
 		}
 		
 		float m = sqrt(pow(velocity0,2) + pow(velocity90,2));
-		
+		//System.out.println(m);
 		return new Vector(a, m);
 	}
 	
@@ -286,6 +295,7 @@ public abstract class Qbject extends GameComponent implements Cloneable, Matheor
 	}
 
 
+	
 	public void move() {
 		Coordinates dispXY = new Coordinates(0, 0);
 		
@@ -299,8 +309,8 @@ public abstract class Qbject extends GameComponent implements Cloneable, Matheor
 				continue;
 
 			float norDeg = f.getDirection() % 90;
-			int quadrant = (int) f.getDirection() / 90; // 0: 0-89, 1: 90-179, 2:
-													// 180-269, 3: 270-359
+			int quadrant = floor(f.getDirection() / 90); // 0: 0-89, 1: 90-179, 2:
+													     // 180-269, 3: 270-359
 			// Use Pythagorean Theorem to calculate the runner and riser
 			// forces
 			float riserForce = sin(radians(norDeg)) * f.getMagnitude();

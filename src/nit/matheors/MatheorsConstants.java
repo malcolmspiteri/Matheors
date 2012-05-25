@@ -16,13 +16,14 @@ public interface MatheorsConstants {
 	public final static float HIGHEST_MATHEOR_NUMBER = 10;
 	public final static float LOWEST_TARGET_NUMBER = 40;
 	public final static float HIGHEST_TARGET_NUMBER = 99;
-	public final static float GAME_TIMER_SECONDS = 120;
+	public final static float GAME_TIMER_SECONDS = 999;
 	public final static float MATHEOR_SPAWN_INTERVAL = FPS * 2;
 	
 	public final static int PLAYER1_SPACECRAFT_TYPE = 1;
 	public final static int PLAYER2_SPACECRAFT_TYPE = 2;
 	public final static float SPACECRAFT_MASS = 10;
 	public final static float SPACECRAFT_STRENGTH = Float.MAX_VALUE;
+	public final static float SPACECRAFT_MAX_VELOCITY = 15;
 	public final static float FIRING_RATE_PER_SECOND = 2;
 
 	public final static float MATHEAOR_MASS_LOW = 50;
@@ -34,5 +35,8 @@ public interface MatheorsConstants {
 	public final static float SHOT_MASS = 10;
 	public final static float SHOT_STRENGTH = 0;
 	public final static float SHOT_RADIOUS = 15;
+	
+	public final static int FIDUCIAL_0 = 0;
+	public final static int FIDUCIAL_1 = 1;
 
 }
