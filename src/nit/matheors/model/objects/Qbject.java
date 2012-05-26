@@ -136,6 +136,7 @@ public abstract class Qbject extends GameComponent implements Cloneable, Matheor
 		
 		float norDeg = initVelocity.getDirection() % 90;
 		int quadrant = (int) initVelocity.getDirection() / 90; // 0: 0-89, 1: 90-179, 2:
+		if (quadrant < 0) quadrant = 0;
 												// 180-269, 3: 270-359
 		float riser = sin(radians(norDeg)) * initVelocity.getMagnitude();
 		float runner = cos(radians(norDeg)) * initVelocity.getMagnitude();
@@ -309,12 +310,15 @@ public abstract class Qbject extends GameComponent implements Cloneable, Matheor
 				continue;
 
 			float norDeg = f.getDirection() % 90;
+			
 			int quadrant = floor(f.getDirection() / 90); // 0: 0-89, 1: 90-179, 2:
 													     // 180-269, 3: 270-359
 			// Use Pythagorean Theorem to calculate the runner and riser
 			// forces
 			float riserForce = sin(radians(norDeg)) * f.getMagnitude();
 			float runnerForce = cos(radians(norDeg)) * f.getMagnitude();
+			if (quadrant < 0 || quadrant > 3)
+				quadrant = 0;
 			netForce[quadrant % 4] += runnerForce;
 			netForce[(quadrant + 1) % 4] += riserForce;
 		}

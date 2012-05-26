@@ -133,7 +133,7 @@ public class Spacecraft extends ComplexQbject implements Controllable, PConstant
 	}
 	
 	public Qbject fire() {
-		float x = 80;
+		float x = 60;
 		float y = 0;
 		float x1 = (x * cos(radians(angle))) - (y * sin(radians(angle)));
 		float y1 = (x * sin(radians(angle))) + (y * cos(radians(angle)));
@@ -212,29 +212,16 @@ public class Spacecraft extends ComplexQbject implements Controllable, PConstant
 				calibrateForwardThrust();
 		}
 		
-		if (!maxVelocityReached(abs)) {
-			if (thrustOn) {
-				incForce();
-			}
-	
-			if (reverseThrustOn) {
-				decForce();
-			}
-		} else {
-			thrustersOff();
-		}
-		
+		super.move();
+
 		if ((firingOn && 
 				firingTicker++ % PApplet.round(FPS / FIRING_RATE_PER_SECOND) == 0) 
 			|| fireOnce) {
 			game.addQbject(fire());
 			fireOnce = false;
 		}
-		
-		super.move();
 
 		// Limit the velocity
-		/*
 		float v = getMotionVector().getMagnitude();
 		float d = v - maxVelocity;
 		
@@ -243,8 +230,15 @@ public class Spacecraft extends ComplexQbject implements Controllable, PConstant
 			velocity90 -= (d * (velocity90 / v));
 			velocity180 -= (d * (velocity180 / v));
 			velocity270 -= (d * (velocity270 / v));
+		} else {
+			if (thrustOn) {
+				incForce();
+			}
 		}
-		*/
+
+		if (reverseThrustOn) {
+			decForce();
+		}			
 
 		// Wrap to the opposite side of the screen
 		// if the object's position exceeds it

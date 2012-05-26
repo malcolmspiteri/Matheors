@@ -120,13 +120,14 @@ public class Game extends GameComponent implements MatheorsConstants, PConstants
 			p1coor = new Coordinates(QUARTER_WIDTH, HALF_HEIGHT);
 		}
 		
+		Controller tuioController = new TUIOController(getParent(), this);
+
 		player1 = new Spacecraft(getParent(), this, PLAYER1_SPACECRAFT_TYPE, p1coor, new Vector(0, 0), SPACECRAFT_MAX_VELOCITY);
 		Controller controllerPlayer1 = new KeyboardController(getParent(), UP, DOWN, RIGHT, LEFT, ENTER, 33, 34);
-		Controller tuioP1Controller = new TUIOController(getParent(), this, 24, 29);
 		controllerPlayer1.control(player1);
-		tuioP1Controller.control(player1);
+		tuioController.control(player1, 24, 11, 33, 32);
 		tidyUps.add((CanTidyUp) controllerPlayer1);
-		tidyUps.add((CanTidyUp) tuioP1Controller);
+		tidyUps.add((CanTidyUp) tuioController);
 		p1Scoreboard = getParent().loadImage("images\\header_p1.png");
 		p1Score = 0;
 		
@@ -136,6 +137,7 @@ public class Game extends GameComponent implements MatheorsConstants, PConstants
 			player2 = new Spacecraft(getParent(), this, PLAYER2_SPACECRAFT_TYPE, new Coordinates(THREEQUARTERS_WIDTH, HALF_HEIGHT), new Vector(0, 0), SPACECRAFT_MAX_VELOCITY);
 			Controller controllerPlayer2 = new KeyboardController(getParent(), 81, 65, 88, 90, SHIFT, 49, 50);
 			controllerPlayer2.control(player2);			
+			tuioController.control(player2, 12, 13, 34, 35);
 			p2Scoreboard = getParent().loadImage("images\\header_p2.png");
 			p2Score = 0;
 
@@ -274,11 +276,12 @@ public class Game extends GameComponent implements MatheorsConstants, PConstants
 		if ((GAME_TIMER_SECONDS * FPS) == ticker) {
 			getParent().endCurrentGame();
 		}
-		/*
+		
 		if (ticker % MATHEOR_SPAWN_INTERVAL == 0) {
 			addQbject(createNewMatheor());
 		}
-		*/
+		
+		
 		
 	}
 

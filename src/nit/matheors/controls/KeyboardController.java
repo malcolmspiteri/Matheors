@@ -34,7 +34,7 @@ public class KeyboardController extends GameComponent implements Controller, Can
 
 	private KeyListener listener;
 	@Override
-	public void control(final Controllable controllable) {
+	public void control(final Controllable controllable, Object... params) {
 		listener = new KeyListener() {
 			
 			@Override
@@ -89,5 +89,6 @@ public class KeyboardController extends GameComponent implements Controller, Can
 	public void tidyUp() {
 		getParent().removeKeyListener(listener);		
 	}
+
 
 }
