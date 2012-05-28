@@ -22,8 +22,8 @@ import static processing.core.PApplet.floor;
 
 public class Spacecraft extends ComplexQbject implements Controllable, PConstants, CanTidyUp {
 
-	public Spacecraft(Matheors p, Game g, int type, Coordinates compos, Vector initVelocity, float maxVelocity) {
-		super(p, SPACECRAFT_MASS, SPACECRAFT_STRENGTH, compos, initVelocity, maxVelocity);
+	public Spacecraft(Matheors p, Game g, int type, Coordinates compos, Vector initVelocity) {
+		super(p, SPACECRAFT_MASS, SPACECRAFT_STRENGTH, compos, initVelocity);
 
 		this.type = type;
 		this.game = g;
@@ -254,45 +254,6 @@ public class Spacecraft extends ComplexQbject implements Controllable, PConstant
 		if (compos.getY() < 0)
 			compos.setY(SCREEN_HEIGHT);
 		
-	}
-	
-	public void paint() {
-
-		getParent().pushMatrix();
-		// move the origin to the pivot point
-		getParent().translate(compos.getX(), compos.getY());
-
-		// then pivot the grid
-		getParent().rotate(radians(angle * -1));
-
-		// and draw the spacecraft at the origin
-		getParent().imageMode(CENTER);
-		getParent().smooth();
-		float thrust = getForwardThrust();
-		if (thrust > 0)
-			hover.unmute();
-		else
-			hover.mute();
-		
-		if (thrustOn) {
-			float v = getMotionVector().getMagnitude();
-			float v25p = SPACECRAFT_MAX_VELOCITY * 0.25f;
-			float v50p = SPACECRAFT_MAX_VELOCITY * 0.5f;
-			float v75p = SPACECRAFT_MAX_VELOCITY * 0.75f;
-			if (v <= v25p)
-				getParent().image(img0, 0, 0);		
-			else if (v > v25p && v <= v50p)
-				getParent().image(img1, 0, 0);
-			else if (v > v50p && v <= v75p)
-				getParent().image(img2, 0, 0);
-			else 
-				getParent().image(img3, 0, 0);
-		} else {
-			getParent().image(img0, 0, 0);
-		}
-
-		getParent().popMatrix();		
-
 		float x = 0;
 		float y = 0;
 		float x1 = 0;
@@ -335,6 +296,45 @@ public class Spacecraft extends ComplexQbject implements Controllable, PConstant
 		x1 = (x * cos(radians(angle))) - (y * sin(radians(angle)));
 		y1 = (x * sin(radians(angle))) + (y * cos(radians(angle)));
 		vertices.add(new Coordinates(compos.getX() + x1, compos.getY() - y1));
+
+	}
+	
+	public void paint() {
+
+		getParent().pushMatrix();
+		// move the origin to the pivot point
+		getParent().translate(compos.getX(), compos.getY());
+
+		// then pivot the grid
+		getParent().rotate(radians(angle * -1));
+
+		// and draw the spacecraft at the origin
+		getParent().imageMode(CENTER);
+		getParent().smooth();
+		float thrust = getForwardThrust();
+		if (thrust > 0)
+			hover.unmute();
+		else
+			hover.mute();
+		
+		if (thrustOn) {
+			float v = getMotionVector().getMagnitude();
+			float v25p = SPACECRAFT_MAX_VELOCITY * 0.25f;
+			float v50p = SPACECRAFT_MAX_VELOCITY * 0.5f;
+			float v75p = SPACECRAFT_MAX_VELOCITY * 0.75f;
+			if (v <= v25p)
+				getParent().image(img0, 0, 0);		
+			else if (v > v25p && v <= v50p)
+				getParent().image(img1, 0, 0);
+			else if (v > v50p && v <= v75p)
+				getParent().image(img2, 0, 0);
+			else 
+				getParent().image(img3, 0, 0);
+		} else {
+			getParent().image(img0, 0, 0);
+		}
+
+		getParent().popMatrix();		
 
 		if (DEBUG) {
 			getParent().smooth(); 

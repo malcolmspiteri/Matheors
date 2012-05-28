@@ -1,10 +1,14 @@
 package nit.matheors.modes;
 
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import javax.swing.JOptionPane;
 
 import processing.core.PApplet;
 import processing.core.PConstants;
@@ -13,6 +17,7 @@ import processing.core.PImage;
 import nit.matheors.CanTidyUp;
 import nit.matheors.Coordinates;
 import nit.matheors.GameComponent;
+import nit.matheors.GameMode;
 import nit.matheors.Matheors;
 import nit.matheors.MatheorsConstants;
 import nit.matheors.controls.Controller;
@@ -105,6 +110,8 @@ public class Game extends GameComponent implements MatheorsConstants, PConstants
 		timerFont = getParent().loadFont("Arial-BoldMT-48.vlw");
 		targetNumberFont = getParent().loadFont("Arial-BoldMT-38.vlw");
 	}
+	
+	private KeyListener keyListener;
 
 	public void setup() {
 		loadResources();
@@ -122,7 +129,7 @@ public class Game extends GameComponent implements MatheorsConstants, PConstants
 		
 		Controller tuioController = new TUIOController(getParent(), this);
 
-		player1 = new Spacecraft(getParent(), this, PLAYER1_SPACECRAFT_TYPE, p1coor, new Vector(0, 0), SPACECRAFT_MAX_VELOCITY);
+		player1 = new Spacecraft(getParent(), this, PLAYER1_SPACECRAFT_TYPE, p1coor, new Vector(0, 0));
 		Controller controllerPlayer1 = new KeyboardController(getParent(), UP, DOWN, RIGHT, LEFT, ENTER, 33, 34);
 		controllerPlayer1.control(player1);
 		tuioController.control(player1, 24, 11, 33, 32);
@@ -134,7 +141,7 @@ public class Game extends GameComponent implements MatheorsConstants, PConstants
 		addQbject(player1);
 		
 		if (noOfPlayers == 2) {
-			player2 = new Spacecraft(getParent(), this, PLAYER2_SPACECRAFT_TYPE, new Coordinates(THREEQUARTERS_WIDTH, HALF_HEIGHT), new Vector(0, 0), SPACECRAFT_MAX_VELOCITY);
+			player2 = new Spacecraft(getParent(), this, PLAYER2_SPACECRAFT_TYPE, new Coordinates(THREEQUARTERS_WIDTH, HALF_HEIGHT), new Vector(0, 0));
 			Controller controllerPlayer2 = new KeyboardController(getParent(), 81, 65, 88, 90, SHIFT, 49, 50);
 			controllerPlayer2.control(player2);			
 			tuioController.control(player2, 12, 13, 34, 35);
@@ -143,6 +150,32 @@ public class Game extends GameComponent implements MatheorsConstants, PConstants
 
 			addQbject(player2);
 		}
+		
+		keyListener = new KeyListener() {
+			
+			@Override
+			public void keyTyped(KeyEvent e) {
+				// nothing to do here				
+			}
+			
+			@Override
+			public void keyReleased(KeyEvent e) {
+				// nothing to do here				
+			}
+			
+			@Override
+			public void keyPressed(KeyEvent e) {		
+				if (getParent().getMode() == GameMode.GAME) {
+					if (e.getKeyChar() == 'q') {
+						if (JOptionPane.showConfirmDialog(getParent(), "Are you sure you want to quit this game and go back to the menu?") == JOptionPane.OK_OPTION) {
+							getParent().abortCurrentGame();
+						}
+					}
+				}
+			}
+		};
+		getParent().addKeyListener(keyListener);
+		
 			
 	}
 
@@ -169,19 +202,14 @@ public class Game extends GameComponent implements MatheorsConstants, PConstants
 						processed.put(o2, new ArrayList<Qbject>());
 					}
 					if (o.hasCollidedWith(o2)) {
-						// They are in collision
+						// They have collided
 						
 						// First, we take care of object 1
 						Qbject oc = o.createClone();
-						boolean o1exploded = o.collideAndMaybeExplodeWith(o2);
-						if (o1exploded && o instanceof Matheor && o2 instanceof Shot) {
-							updateScores((Matheor) o, (Shot) o2);
-						}
+						o.collideAndMaybeExplodeWith(o2);
+						
 						// Now it's object 2's turn
-						boolean o2exploded = o2.collideAndMaybeExplodeWith(oc);
-						if (o2exploded && o2 instanceof Matheor && o instanceof Shot) {
-							updateScores((Matheor) o2, (Shot) o);
-						}
+						o2.collideAndMaybeExplodeWith(oc);
 						
 					}
 					processed.get(o2).add(o);
@@ -229,12 +257,14 @@ public class Game extends GameComponent implements MatheorsConstants, PConstants
 		
 		ticker++;
 				
+		qbjects = checkForCollisions();
+
 		for (Qbject o : qbjects) {
 			o.move();
 			o.draw();
 		}
-		qbjects = checkForCollisions();
 		
+		getParent().textAlign(CENTER);
 		getParent().textMode(CENTER);
 
 		// Paint scoreboards
@@ -273,21 +303,27 @@ public class Game extends GameComponent implements MatheorsConstants, PConstants
 		int secRemaining = PApplet.floor(GAME_TIMER_SECONDS - (ticker / FPS) );		
 		getParent().text(secRemaining, HALF_WIDTH, 50);
 		
-		if ((GAME_TIMER_SECONDS * FPS) == ticker) {
-			getParent().endCurrentGame();
-		}
 		
 		if (ticker % MATHEOR_SPAWN_INTERVAL == 0) {
 			addQbject(createNewMatheor());
 		}
 		
+		checkIfShouldEndGame();
 		
-		
+	}
+	
+	private void checkIfShouldEndGame() {
+		if ((GAME_TIMER_SECONDS * FPS == ticker) ||
+				(p1Score == targetNumber) ||
+				(p2Score == targetNumber)) {
+			getParent().endCurrentGame();
+		}		
 	}
 
 	@Override
 	public void tidyUp() {		
 		try {
+			getParent().removeKeyListener(keyListener);
 			for (CanTidyUp t : tidyUps)
 				t.tidyUp();
 		} catch (Exception e) {

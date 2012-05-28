@@ -1,5 +1,7 @@
 package nit.matheors;
 
+import javax.swing.JOptionPane;
+
 import ddf.minim.Minim;
 import nit.matheors.modes.Game;
 import nit.matheors.modes.GameEnding;
@@ -44,6 +46,18 @@ public class Matheors extends PApplet implements MatheorsConstants {
 		mode = GameMode.ENDING;
 	}
 	
+	public void abortCurrentGame() {
+		currentGame.tidyUp();
+		mode = GameMode.MAIN_MENU;
+	}
+
+	public void exitMatheors() {
+		if (JOptionPane.showConfirmDialog(this, "Are you sure you want to exit from Matheors?") == JOptionPane.OK_OPTION) {
+			mainMenu.tidyUp();
+			exit();
+		}
+	}
+
 	public void mainMenu() {
 		mode = GameMode.MAIN_MENU;
 	}

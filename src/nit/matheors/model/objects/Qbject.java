@@ -65,7 +65,7 @@ public abstract class Qbject extends GameComponent implements Cloneable, Matheor
 
 	private boolean exploding;
 	private boolean explosionSoundPlayed = false;
-	float explosionDuration = FPS * 3;
+	float explosionDuration = FPS * 1;
 	long explosionTicks = 0;
 	private static AudioSample explosionAudioSample;
 	private static List<PImage> explosionFrames;
@@ -114,20 +114,12 @@ public abstract class Qbject extends GameComponent implements Cloneable, Matheor
 	private static final int LEFT_Q = 2;
 	private static final int DOWN_Q = 3;
 	
-	private float maxVelocity;
-	
 	protected Qbject(Matheors p, float massKg, float strength, Coordinates compos, 	Vector initVelocity) {
-		this(p, massKg, strength, compos, initVelocity, Float.MAX_VALUE);
-	}
-	
-	protected Qbject(Matheors p, float massKg, float strength, Coordinates compos, 	Vector initVelocity, float maxVelocity) {
 		super(p);
 		this.massKg = massKg;
 		this.strength = strength;
 		this.compos = compos;
 		this.angle = initVelocity.getDirection();
-		this.maxVelocity = maxVelocity;
-		
 		pcompos = compos.createClone();
 
 		// Distribute the initial velocity over the 4 directions
@@ -207,10 +199,33 @@ public abstract class Qbject extends GameComponent implements Cloneable, Matheor
 				- (a2 * ((b1 * c3) - (c1 * b3))) + (a3 * ((b1 * c2) - (c1 * b2)))) / 2;
 	}
 
+	private Qbject lastCollisionQbject;
+	private int lastCollisionHistoryDuration;
+	
 	public boolean hasCollidedWith(Qbject other) {
 		if (!canCollideWith(other))
 			return false;
-		return determineIfCollisionOccurredWith(other);
+		boolean collided = determineIfCollisionOccurredWith(other);
+		
+		// Unfortunately, I had to resort to the below hack to minimise
+		// the incidence of objects sticking together and continue colliding
+		// infinitely
+		if (collided) {
+			if (lastCollisionQbject == null) {
+				lastCollisionQbject = other;
+			} else {
+				if (lastCollisionQbject == other) {
+					collided = false;
+				}
+			}
+		} else {
+			if (++lastCollisionHistoryDuration == 5) {
+				lastCollisionQbject = null;
+				lastCollisionHistoryDuration = 0;
+				
+			}
+		}
+		return collided;
 	}
 	
 	public abstract boolean determineIfCollisionOccurredWith(Qbject other);
@@ -226,11 +241,11 @@ public abstract class Qbject extends GameComponent implements Cloneable, Matheor
 		float impulse = 0;
 		impulse += collide0(other.getMassKg(), other.getVelocity0());
 		impulse += collide90(other.getMassKg(), other.getVelocity90());
+		moveToPreviousPosition();
 		if (impulse > strength) {
 			explode();
 			return true;
 		} else {
-			moveToPreviousPosition();
 			return false;
 		}
 	}
@@ -373,6 +388,10 @@ public abstract class Qbject extends GameComponent implements Cloneable, Matheor
 		
 		compos.addX(dispXY.getX());
 		compos.addY(dispXY.getY());
+		
+		if (exploding && explosionDuration != 0 && (explosionTicks++ >= explosionDuration)) {
+			dead = true;
+		}
 
 	}
 
@@ -396,10 +415,6 @@ public abstract class Qbject extends GameComponent implements Cloneable, Matheor
 			if (!explosionSoundPlayed) {
 				explosionAudioSample.trigger();
 				explosionSoundPlayed = true;
-			}
-			
-			if (explosionDuration != 0 && (explosionTicks++ >= explosionDuration)) {
-				dead = true;
 			}
 			
 		} else {

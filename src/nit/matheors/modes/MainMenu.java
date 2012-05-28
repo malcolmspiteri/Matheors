@@ -55,7 +55,7 @@ public class MainMenu extends GameComponent implements MatheorsMode, PConstants 
 						music.pause();
 					}				
 					if (e.getKeyChar() == 'e') {
-						getParent().startGame(1);
+						getParent().exitMatheors();
 					}
 				}
 			}

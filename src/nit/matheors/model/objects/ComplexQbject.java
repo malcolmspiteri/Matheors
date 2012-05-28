@@ -18,10 +18,6 @@ public abstract class ComplexQbject extends Qbject {
 		super(p, massKg, strength, compos, initVelocity);
 	}
 
-	public ComplexQbject(Matheors p, float massKg, float strength, Coordinates compos, Vector initVelocity, float maxVelocity) {
-		super(p, massKg, strength, compos, initVelocity, maxVelocity);
-	}
-
 	public boolean determineIfCollisionOccurredWith(Qbject other) {
 		if (other instanceof ComplexQbject) {
 			ComplexQbject cother = (ComplexQbject) other;

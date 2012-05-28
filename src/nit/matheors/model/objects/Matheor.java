@@ -1,5 +1,7 @@
 package nit.matheors.model.objects;
 
+import javax.swing.text.html.HTMLDocument.HTMLReader.IsindexAction;
+
 import nit.matheors.Coordinates;
 import nit.matheors.Matheors;
 import nit.matheors.model.Vector;
@@ -17,6 +19,8 @@ public class Matheor extends SimpleQbject implements PConstants {
 	protected static final String MATHEOR_IMAGE_NAME_SMALL = "0.png";
 	protected static final String MATHEOR_IMAGE_NAME_BIG = "1.png";
 	
+	private Shot killerShot;
+	
 	@Override
 	public boolean collideAndMaybeExplodeWith(Qbject other) throws Exception {
 		// TODO Auto-generated method stub
@@ -28,11 +32,14 @@ public class Matheor extends SimpleQbject implements PConstants {
 			Vector omv = other.getMotionVector();
 			boolean explode =  super.collideAndMaybeExplodeWith(other);
 			
+			if (explode && other instanceof Shot)
+				killerShot = (Shot) other;
+			
 			// The following block of code implements the matheor split upon explosion.
 			// When hit, the matheor will split into two smaller ones.
 			// I'm disregarding the law of conservation of momentum here to make more arcade-ish
 			
-			if (size == MatheorSize.BIG) {
+			if (explode && number > 1 && size == MatheorSize.BIG) {
 
 				float x, y, x1, y1, a;
 				int n1, n2;
@@ -71,9 +78,9 @@ public class Matheor extends SimpleQbject implements PConstants {
 		this(p, g, massKg, compos, initVelocity, size, -1, -1);
 	}
 
-	public Matheor(Matheors p, Game g, float massKg, Coordinates compos, Vector initVelocity, MatheorSize size, int color, int number) {
+	public Matheor(Matheors p, Game game, float massKg, Coordinates compos, Vector initVelocity, MatheorSize size, int color, int number) {
 		super(p, massKg, MATHEAOR_STRENGTH, compos, initVelocity, size == MatheorSize.SMALL ? MATHEOR_RADIOUS_SMALL : MATHEOR_RADIOUS_BIG);
-		game = g;
+		this.game = game;
 		this.size = size;
 		if (color == -1)
 			this.color = round(getParent().random(3));
@@ -148,6 +155,10 @@ public class Matheor extends SimpleQbject implements PConstants {
 			}
 		} else {
 			coorValidOnce = true;
+		}
+		
+		if (dead && killerShot != null) {
+			game.updateScores(this, killerShot);
 		}
 		
 	}
