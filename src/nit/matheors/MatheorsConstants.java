@@ -16,7 +16,7 @@ public interface MatheorsConstants {
 	public final static float HIGHEST_MATHEOR_NUMBER = 10;
 	public final static float LOWEST_TARGET_NUMBER = 40;
 	public final static float HIGHEST_TARGET_NUMBER = 99;
-	public final static float GAME_TIMER_SECONDS = 999;
+	public final static float GAME_TIMER_SECONDS = 90;
 	public final static float MATHEOR_SPAWN_INTERVAL = FPS * 3;
 	
 	public final static int PLAYER1_SPACECRAFT_TYPE = 1;

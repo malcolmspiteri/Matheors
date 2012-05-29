@@ -166,7 +166,7 @@ public class Game extends GameComponent implements MatheorsConstants, PConstants
 			@Override
 			public void keyPressed(KeyEvent e) {		
 				if (getParent().getMode() == GameMode.GAME) {
-					if (e.getKeyChar() == 'q') {
+					if (e.getKeyChar() == 'e') {
 						if (JOptionPane.showConfirmDialog(getParent(), "Are you sure you want to quit this game and go back to the menu?") == JOptionPane.OK_OPTION) {
 							getParent().abortCurrentGame();
 						}

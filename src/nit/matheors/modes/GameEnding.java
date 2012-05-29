@@ -107,7 +107,7 @@ public class GameEnding extends GameComponent implements MatheorsMode, PConstant
 			rendered = true;
 
 			getParent().textMode(CENTER);
-			getParent().text("Game Over\n" + message + "\nPress ENTER to go back", HALF_WIDTH, HALF_HEIGHT - 50);
+			getParent().text("Game Over\n" + message, HALF_WIDTH, HALF_HEIGHT - 50);
 			
 			appropriateSample.trigger();
 		}	
