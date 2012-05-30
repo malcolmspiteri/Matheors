@@ -132,7 +132,7 @@ public class Game extends GameComponent implements MatheorsConstants, PConstants
 		player1 = new Spacecraft(getParent(), this, PLAYER1_SPACECRAFT_TYPE, p1coor, new Vector(0, 0));
 		Controller controllerPlayer1 = new KeyboardController(getParent(), UP, DOWN, RIGHT, LEFT, ENTER, 33, 34);
 		controllerPlayer1.control(player1);
-		tuioController.control(player1, 24, 11, 33, 32);
+		tuioController.control(player1, 5, 6);
 		tidyUps.add((CanTidyUp) controllerPlayer1);
 		tidyUps.add((CanTidyUp) tuioController);
 		p1Scoreboard = getParent().loadImage("images\\header_p1.png");
@@ -144,7 +144,7 @@ public class Game extends GameComponent implements MatheorsConstants, PConstants
 			player2 = new Spacecraft(getParent(), this, PLAYER2_SPACECRAFT_TYPE, new Coordinates(THREEQUARTERS_WIDTH, HALF_HEIGHT), new Vector(0, 0));
 			Controller controllerPlayer2 = new KeyboardController(getParent(), 81, 65, 88, 90, SHIFT, 49, 50);
 			controllerPlayer2.control(player2);			
-			tuioController.control(player2, 12, 13, 34, 35);
+			tuioController.control(player2, 1, 4);
 			p2Scoreboard = getParent().loadImage("images\\header_p2.png");
 			p2Score = 0;
 
@@ -251,9 +251,9 @@ public class Game extends GameComponent implements MatheorsConstants, PConstants
 	}
 	
 	public void draw() throws Exception {
-		//getParent().background(background);
-		getParent().imageMode(CORNERS);
-		getParent().image(background, 0, 0);
+		getParent().background(background);
+		/*getParent().imageMode(CORNERS);
+		getParent().image(background, 0, 0);*/
 		
 		ticker++;
 				

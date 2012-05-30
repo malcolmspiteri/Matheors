@@ -196,8 +196,6 @@ public class Spacecraft extends ComplexQbject implements Controllable, PConstant
 
 	public void move() {
 
-		float abs = angle;
-		
 		if (steerClockwiseOn) {
 			angle -= 10;
 			if (angle < 0)

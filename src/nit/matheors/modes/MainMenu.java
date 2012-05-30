@@ -65,9 +65,9 @@ public class MainMenu extends GameComponent implements MatheorsMode, PConstants 
 
 	@Override
 	public void draw() {
-		//getParent().background(mainmenu);
-		getParent().imageMode(CORNERS);
-		getParent().image(mainmenu, 0, 0);
+		getParent().background(mainmenu);
+		/*getParent().imageMode(CORNERS);
+		getParent().image(mainmenu, 0, 0);*/
 
 		if (!music.isPlaying())
 			music.loop();
