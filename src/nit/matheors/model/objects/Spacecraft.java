@@ -36,6 +36,7 @@ public class Spacecraft extends ComplexQbject implements Controllable, PConstant
 
 		hover.mute();
 		hover.loop();
+		thrustOn = true;
 	}
 
 	private int type;
@@ -87,7 +88,7 @@ public class Spacecraft extends ComplexQbject implements Controllable, PConstant
 
 	@Override
 	public void thrustersOff() {
-		thrustOn = false;
+		//thrustOn = false;
 		reverseThrustOn = false;		
 		zeroForce();
 	}
