@@ -6,7 +6,6 @@ import java.awt.event.KeyListener;
 import nit.matheors.CanTidyUp;
 import nit.matheors.GameComponent;
 import nit.matheors.Matheors;
-import nit.matheors.model.objects.Qbject;
 
 public class KeyboardController extends GameComponent implements Controller, CanTidyUp {
 

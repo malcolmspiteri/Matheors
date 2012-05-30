@@ -23,8 +23,7 @@ public class Matheor extends SimpleQbject implements PConstants {
 	
 	@Override
 	public boolean collideAndMaybeExplodeWith(Qbject other) throws Exception {
-		// TODO Auto-generated method stub
-		if (other.getClass() == Matheor.class || other.getClass() == Spacecraft.class) {
+		if (other.getClass() == Matheor.class) { // || other.getClass() == Spacecraft.class) {
 			return super.collideWith(other);
 		} else {
 			float currMass = massKg;
